@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
+	<meta charset="UTF-8">
 	<title>Multi Weather Config</title>
 	<script src="https://use.fontawesome.com/3a291b24ff.js"></script>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -294,36 +295,42 @@
 	</div>
 
 	<div class="section">
-		<div class="section-header">Temperature Display</div>
+		<div class="section-header">Quick Glance</div>
 		<div class="section-body">
-		<p class="form-text">Choose your preferred unit and whether to show both units.</p>
-		<div class="form-group">
-			<label class="form-label" for="quick-glance">Quick Glance</label>
-			<select id="quick-glance" class="form-select">
-				<option value="temperature">Temperature</option>
-				<option value="humidity">Humidity</option>
-				<option value="wind">Wind Speed</option>
-				<option value="forecast">Forecast</option>
-			</select>
-			<p class="form-text">Sets the main menu subtitle for each provider.</p>
+			<div class="form-group" style="margin-bottom: 0;">
+				<label class="form-label" for="quick-glance">Main Menu Subtitle</label>
+				<select id="quick-glance" class="form-select">
+					<option value="temperature">Temperature</option>
+					<option value="humidity">Humidity</option>
+					<option value="wind">Wind Speed</option>
+					<option value="forecast">Forecast</option>
+				</select>
+				<p class="form-text" style="margin-bottom: 0;">Choose what information displays below each provider name.</p>
+			</div>
 		</div>
-		<div class="form-group">
-			<label class="form-label" for="temp-unit">Preferred Unit</label>
-			<select id="temp-unit" class="form-select">
-				<option value="F">Fahrenheit (°F)</option>
-				<option value="C">Celsius (°C)</option>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Units</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="temp-unit">Temperature</label>
+				<select id="temp-unit" class="form-select">
+					<option value="F">Fahrenheit (°F)</option>
+					<option value="C">Celsius (°C)</option>
 				</select>
 			</div>
-			<div class="form-group">
-				<label class="form-label" for="speed-unit">Speed Unit</label>
+			<div class="form-switch">
+				<label class="form-check-label" for="temp-show-both">Show both temperature units</label>
+				<input type="checkbox" id="temp-show-both">
+			</div>
+			<p class="form-text">When enabled, displays both °F and °C values.</p>
+			<div class="form-group" style="margin-bottom: 0;">
+				<label class="form-label" for="speed-unit">Wind Speed</label>
 				<select id="speed-unit" class="form-select">
 					<option value="mph">Miles per hour (mph)</option>
-					<option value="kmh">Kilometers per hour (kmh)</option>
+					<option value="kmh">Kilometers per hour (km/h)</option>
 				</select>
-			</div>
-			<div class="form-switch" style="margin-top: 0.6rem;">
-				<label class="form-check-label" for="temp-show-both">Show both units</label>
-				<input type="checkbox" id="temp-show-both">
 			</div>
 		</div>
 	</div>

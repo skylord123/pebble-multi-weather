@@ -35,7 +35,7 @@ WeatherManager.init();
 
 // === Settings Config Handler ===
 SettingsManager.initConfigHandler({
-    configPageUrl: 'config/v1.0.html',
+    configPageUrl: Constants.CONFIG_PAGE_BASE_URL + Constants.CONFIG_PAGE_VERSION,
     onSettingsChanged: function() {
         helpers.log('Settings changed, refreshing weather');
         SettingsManager.load();

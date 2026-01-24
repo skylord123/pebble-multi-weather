@@ -7,6 +7,10 @@ var Constants = {
     appVersion: '1.0',
     appName: 'Multi Weather',
 
+    // Config page settings
+    CONFIG_PAGE_BASE_URL: 'https://skylord123.github.io/pebble-multi-weather/config/',
+    CONFIG_PAGE_VERSION: 'v1.0.html',
+
     // Debug settings
     debug: true,
 
