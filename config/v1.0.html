@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Multi Weather Config</title>
+	<script src="https://use.fontawesome.com/3a291b24ff.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="color-scheme" content="light dark">
+	<style>
+		:root {
+			--color-accent: #2d7a6b;
+			--color-accent-dark: #1f5a50;
+			--color-background: #f0f3f4;
+			--color-section-bg: #ffffff;
+			--color-section-header: #e7ecef;
+			--color-text: #1f2a30;
+			--color-text-muted: #5d6b73;
+			--color-divider: #d7dee2;
+			--shadow-section: 0 0.2rem 0.35rem rgba(0,0,0,0.12);
+			--shadow-button: 0 0.1rem 0.1rem rgba(0,0,0,0.1);
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--color-accent: #69c6b3;
+				--color-accent-dark: #3b8f80;
+				--color-background: #1f2427;
+				--color-section-bg: #2b3136;
+				--color-section-header: #24292d;
+				--color-text: #f4f6f7;
+				--color-text-muted: #9aa6ad;
+				--color-divider: #3b4248;
+				--shadow-section: 0 0.2rem 0.35rem rgba(0,0,0,0.4);
+				--shadow-button: 0 0.1rem 0.1rem rgba(0,0,0,0.3);
+			}
+		}
+
+		*, *:before, *:after {
+			box-sizing: border-box;
+		}
+
+		html, body {
+			margin: 0;
+			padding: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			font-size: 17px;
+			line-height: 1.4;
+			-webkit-font-smoothing: antialiased;
+			background-color: var(--color-background);
+			color: var(--color-text);
+		}
+
+		.container {
+			max-width: 640px;
+			margin: 0 auto;
+			padding: 0 0.9rem 1.5rem;
+		}
+
+		.page-header {
+			padding: 1.2rem 0 0.6rem;
+			text-align: center;
+		}
+
+		.page-header h1 {
+			margin: 0 0 0.3rem;
+			font-size: 1.35rem;
+			font-weight: 700;
+			letter-spacing: 0.02em;
+		}
+
+		.page-header p {
+			margin: 0;
+			font-size: 0.9rem;
+			color: var(--color-text-muted);
+		}
+
+		.section {
+			background: var(--color-section-bg);
+			border-radius: 0.3rem;
+			box-shadow: var(--shadow-section);
+			margin-top: 1rem;
+			overflow: hidden;
+		}
+
+		.section-header {
+			background: var(--color-section-header);
+			padding: 0.7rem 0.9rem;
+			font-size: 0.85rem;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.section-body {
+			padding: 0.9rem;
+		}
+
+		.form-text {
+			font-size: 0.85rem;
+			color: var(--color-text-muted);
+			margin: 0.2rem 0 0.8rem;
+		}
+
+		.list-group {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		.list-group-item {
+			display: flex;
+			align-items: center;
+			padding: 0.65rem 0.7rem;
+			border: 1px solid var(--color-divider);
+			background: var(--color-section-bg);
+			margin-top: -1px;
+		}
+
+		.list-group-item:first-child {
+			border-top-left-radius: 0.25rem;
+			border-top-right-radius: 0.25rem;
+		}
+
+		.list-group-item:last-child {
+			border-bottom-left-radius: 0.25rem;
+			border-bottom-right-radius: 0.25rem;
+		}
+
+		.list-group-item .fa-bars {
+			cursor: grab;
+			color: var(--color-text-muted);
+			margin-right: 0.75rem;
+			flex-shrink: 0;
+		}
+
+		.provider-info {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.provider-name {
+			font-weight: 600;
+			font-size: 0.98rem;
+		}
+
+		.provider-desc {
+			font-size: 0.8rem;
+			color: var(--color-text-muted);
+		}
+
+		.form-check-input {
+			width: 1.35rem;
+			height: 1.35rem;
+			margin-left: 0.6rem;
+			background-color: var(--color-section-bg);
+			border: 2px solid var(--color-divider);
+			border-radius: 0.25rem;
+			appearance: none;
+			cursor: pointer;
+		}
+
+		.form-check-input:checked {
+			background-color: var(--color-accent);
+			border-color: var(--color-accent);
+			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+			background-size: 100%;
+			background-position: center;
+			background-repeat: no-repeat;
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0.65rem 1.1rem;
+			font-size: 1rem;
+			font-weight: 600;
+			border-radius: 0.25rem;
+			border: none;
+			cursor: pointer;
+			transition: background-color 0.15s ease;
+		}
+
+		.btn-primary {
+			background-color: var(--color-accent);
+			color: #ffffff;
+		}
+
+		.btn-primary:hover {
+			background-color: var(--color-accent-dark);
+		}
+
+		.btn-secondary {
+			background-color: var(--color-section-header);
+			color: var(--color-text);
+		}
+
+		.save-container {
+			padding: 1rem 0 0.5rem;
+		}
+
+		.save-container .btn {
+			width: 100%;
+		}
+
+		.form-select {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			font-size: 1rem;
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			background: var(--color-section-bg);
+			color: var(--color-text);
+		}
+
+		.form-group {
+			margin-bottom: 0.6rem;
+		}
+
+		.form-label {
+			display: block;
+			font-size: 0.92rem;
+			font-weight: 600;
+			margin-bottom: 0.35rem;
+		}
+
+		.form-check-label {
+			font-size: 0.92rem;
+			font-weight: 500;
+		}
+
+		.form-switch {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6rem;
+			padding: 0.4rem 0;
+		}
+
+		.form-switch input[type="checkbox"] {
+			width: 3rem;
+			height: 1.6rem;
+			border-radius: 1rem;
+			background-color: var(--color-divider);
+			appearance: none;
+			position: relative;
+			cursor: pointer;
+		}
+
+		.form-switch input[type="checkbox"]::before {
+			content: "";
+			position: absolute;
+			top: 0.15rem;
+			left: 0.15rem;
+			width: 1.3rem;
+			height: 1.3rem;
+			background: #fff;
+			border-radius: 50%;
+			transition: transform 0.2s ease;
+			box-shadow: var(--shadow-button);
+		}
+
+		.form-switch input[type="checkbox"]:checked {
+			background-color: var(--color-accent);
+		}
+
+		.form-switch input[type="checkbox"]:checked::before {
+			transform: translateX(1.35rem);
+		}
+
+		.ui-sortable-helper {
+			box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+		}
+
+		.ui-sortable-placeholder {
+			visibility: visible !important;
+			background: var(--color-section-header);
+			border: 2px dashed var(--color-divider);
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<div class="page-header">
+		<h1>Multi Weather</h1>
+		<p>Pick your providers and drag to reorder.</p>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Weather Providers</div>
+		<div class="section-body">
+			<p class="form-text">Enabled providers appear in the app. Drag handles to set the main menu order.</p>
+			<ul id="providers-sortable" class="list-group"></ul>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Temperature Display</div>
+		<div class="section-body">
+		<p class="form-text">Choose your preferred unit and whether to show both units.</p>
+		<div class="form-group">
+			<label class="form-label" for="quick-glance">Quick Glance</label>
+			<select id="quick-glance" class="form-select">
+				<option value="temperature">Temperature</option>
+				<option value="humidity">Humidity</option>
+				<option value="wind">Wind Speed</option>
+				<option value="forecast">Forecast</option>
+			</select>
+			<p class="form-text">Sets the main menu subtitle for each provider.</p>
+		</div>
+		<div class="form-group">
+			<label class="form-label" for="temp-unit">Preferred Unit</label>
+			<select id="temp-unit" class="form-select">
+				<option value="F">Fahrenheit (°F)</option>
+				<option value="C">Celsius (°C)</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label class="form-label" for="speed-unit">Speed Unit</label>
+				<select id="speed-unit" class="form-select">
+					<option value="mph">Miles per hour (mph)</option>
+					<option value="kmh">Kilometers per hour (kmh)</option>
+				</select>
+			</div>
+			<div class="form-switch" style="margin-top: 0.6rem;">
+				<label class="form-check-label" for="temp-show-both">Show both units</label>
+				<input type="checkbox" id="temp-show-both">
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Menu Appearance</div>
+		<div class="section-body">
+			<p class="form-text">Choose the menu background color. Sun Based switches between white (day) and black (night).</p>
+			<div class="form-group">
+				<label class="form-label" for="menu-background">Menu Background</label>
+				<select id="menu-background" class="form-select">
+					<option value="sun">Sun Based</option>
+					<option value="black">Black</option>
+					<option value="white">White</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="save-container">
+		<button type="button" class="btn btn-primary" id="save-btn">Save</button>
+	</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+	<script type="text/javascript">
+		var PROVIDERS = [
+			{ id: 'nws', name: 'NWS', desc: 'National Weather Service (US only)' },
+			{ id: 'openmeteo', name: 'Open-Meteo', desc: 'Global forecast model' },
+			{ id: 'metno', name: 'Meteorologisk institutt', desc: 'MET Norway global forecast' }
+		];
+
+	function decodeOptions() {
+		var hash = window.location.hash;
+		if (!hash || hash.length < 2) {
+			return {};
+		}
+		try {
+			return JSON.parse(decodeURIComponent(hash.substring(1)));
+		} catch (e) {
+			return {};
+		}
+	}
+
+	function buildProviderList(order, enabledMap) {
+		var list = document.getElementById('providers-sortable');
+		list.innerHTML = '';
+
+		for (var i = 0; i < order.length; i++) {
+			var provider = order[i];
+			var li = document.createElement('li');
+			li.className = 'list-group-item';
+			li.setAttribute('data-id', provider.id);
+
+			var handle = document.createElement('i');
+			handle.className = 'fa fa-bars';
+			li.appendChild(handle);
+
+			var info = document.createElement('div');
+			info.className = 'provider-info';
+
+			var name = document.createElement('div');
+			name.className = 'provider-name';
+			name.textContent = provider.name;
+
+			var desc = document.createElement('div');
+			desc.className = 'provider-desc';
+			desc.textContent = provider.desc || '';
+
+			info.appendChild(name);
+			info.appendChild(desc);
+			li.appendChild(info);
+
+			var checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.className = 'form-check-input';
+			checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : true;
+			li.appendChild(checkbox);
+
+			list.appendChild(li);
+		}
+	}
+
+	function initSortable() {
+		$('#providers-sortable').sortable({
+			placeholder: 'list-group-item'
+		});
+	}
+
+	function getSortedProviders() {
+		var ordered = [];
+		var enabled = {};
+		$('#providers-sortable li').each(function() {
+			var id = $(this).data('id');
+			var isEnabled = $(this).find('input[type="checkbox"]').is(':checked');
+			ordered.push(id);
+			enabled[id] = isEnabled;
+		});
+		return { order: ordered, enabled: enabled };
+	}
+
+	function onSave() {
+		var result = getSortedProviders();
+		var payload = {
+			provider_order: result.order,
+			provider_enabled: result.enabled,
+			quick_glance: document.getElementById('quick-glance').value,
+			temperature_unit: document.getElementById('temp-unit').value,
+			speed_unit: document.getElementById('speed-unit').value,
+			temperature_show_both: document.getElementById('temp-show-both').checked,
+			menu_background_mode: document.getElementById('menu-background').value
+		};
+		var returnTo = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(payload));
+		window.location.href = returnTo;
+	}
+
+	(function init() {
+		var options = decodeOptions();
+		var order = Array.isArray(options.provider_order) ? options.provider_order.slice() : [];
+		var enabledMap = options.provider_enabled && typeof options.provider_enabled === 'object'
+			? options.provider_enabled
+			: {};
+		var tempUnit = options.temperature_unit || 'F';
+		var speedUnit = options.speed_unit || 'mph';
+		var quickGlance = options.quick_glance || 'temperature';
+		var menuBackgroundMode = options.menu_background_mode || 'sun';
+		var tempShowBoth = options.temperature_show_both;
+		if (tempShowBoth === undefined || tempShowBoth === null) {
+			tempShowBoth = true;
+		}
+
+		if (!order.length) {
+			order = PROVIDERS.map(function(provider) { return provider.id; });
+		}
+
+		var orderedProviders = [];
+		for (var i = 0; i < order.length; i++) {
+			var providerId = order[i];
+			for (var k = 0; k < PROVIDERS.length; k++) {
+				if (PROVIDERS[k].id === providerId) {
+					orderedProviders.push(PROVIDERS[k]);
+					break;
+				}
+			}
+		}
+
+		for (var j = 0; j < PROVIDERS.length; j++) {
+			var exists = false;
+			for (var m = 0; m < order.length; m++) {
+				if (order[m] === PROVIDERS[j].id) {
+					exists = true;
+					break;
+				}
+			}
+			if (!exists) {
+				orderedProviders.push(PROVIDERS[j]);
+			}
+		}
+
+		buildProviderList(orderedProviders, enabledMap);
+		initSortable();
+
+		document.getElementById('quick-glance').value = quickGlance;
+		document.getElementById('temp-unit').value = tempUnit;
+		document.getElementById('speed-unit').value = speedUnit;
+		document.getElementById('temp-show-both').checked = !!tempShowBoth;
+		document.getElementById('menu-background').value = menuBackgroundMode;
+
+		document.getElementById('save-btn').addEventListener('click', onSave);
+	})();
+</script>
+</body>
+</html>
