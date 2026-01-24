@@ -15,6 +15,17 @@ var SettingsManager = {
         var appState = AppState.getInstance();
         var log = helpers.log;
 
+        // Load cached location (for immediate sun-based theme calculation)
+        var cachedLat = Settings.option('cached_latitude');
+        var cachedLon = Settings.option('cached_longitude');
+        if (cachedLat !== null && cachedLat !== undefined &&
+            cachedLon !== null && cachedLon !== undefined &&
+            !isNaN(cachedLat) && !isNaN(cachedLon)) {
+            appState.latitude = cachedLat;
+            appState.longitude = cachedLon;
+            log('Loaded cached location: ' + cachedLat + ', ' + cachedLon);
+        }
+
         // Temperature unit preference
         appState.temperatureUnit = Settings.option('temperature_unit') || Constants.defaultUnit;
         appState.temperatureShowBoth = Settings.option('temperature_show_both');
@@ -106,6 +117,16 @@ var SettingsManager = {
      */
     set: function(key, value) {
         Settings.option(key, value);
+    },
+
+    /**
+     * Save location to cache for future app launches
+     * @param {number} latitude
+     * @param {number} longitude
+     */
+    saveLocation: function(latitude, longitude) {
+        Settings.option('cached_latitude', latitude);
+        Settings.option('cached_longitude', longitude);
     },
 
     /**

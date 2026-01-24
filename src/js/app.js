@@ -65,6 +65,9 @@ function fetchLocationAndWeather() {
             appState.latitude = position.coords.latitude;
             appState.longitude = position.coords.longitude;
 
+            // Cache location for future app launches (for sun-based theme)
+            SettingsManager.saveLocation(position.coords.latitude, position.coords.longitude);
+
             MainMenuPage.refreshTheme();
             refreshWeather();
         },
