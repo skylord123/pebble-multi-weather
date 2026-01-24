@@ -263,6 +263,72 @@ var helpers = {
     },
 
     /**
+     * Process a custom template string with weather data
+     * @param {string} template - Template string with placeholders
+     * @param {Object} weatherData - Weather data object
+     * @param {string} unit - Preferred temperature unit ('F' or 'C')
+     * @param {string} speedUnit - Preferred speed unit ('mph' or 'kmh')
+     * @returns {string} Processed template string
+     */
+    processCustomTemplate: function(template, weatherData, unit, speedUnit) {
+        if (!template || !weatherData) {
+            return template || '';
+        }
+
+        var self = this;
+        var tempF = weatherData.currentTemp;
+        var tempC = tempF !== null && tempF !== undefined ? this.fahrenheitToCelsius(tempF) : null;
+        var highF = weatherData.highTemp;
+        var lowF = weatherData.lowTemp;
+        var highC = highF !== null && highF !== undefined ? this.fahrenheitToCelsius(highF) : null;
+        var lowC = lowF !== null && lowF !== undefined ? this.fahrenheitToCelsius(lowF) : null;
+        var windMph = weatherData.windSpeed;
+        var windKph = windMph !== null && windMph !== undefined ? this.mphToKmh(windMph) : null;
+
+        var replacements = {
+            // Temperature based on selected unit
+            '{temp}': this.formatTemp(tempF, unit),
+            '{temp_high}': this.formatTemp(highF, unit),
+            '{temp_low}': this.formatTemp(lowF, unit),
+            // Explicit Fahrenheit
+            '{temp_f}': tempF !== null && tempF !== undefined ? Math.round(tempF) + 'F' : '--',
+            '{temp_f_high}': highF !== null && highF !== undefined ? Math.round(highF) + 'F' : '--',
+            '{temp_f_low}': lowF !== null && lowF !== undefined ? Math.round(lowF) + 'F' : '--',
+            // Explicit Celsius
+            '{temp_c}': tempC !== null && tempC !== undefined ? Math.round(tempC) + 'C' : '--',
+            '{temp_c_high}': highC !== null && highC !== undefined ? Math.round(highC) + 'C' : '--',
+            '{temp_c_low}': lowC !== null && lowC !== undefined ? Math.round(lowC) + 'C' : '--',
+            // Wind speed based on selected unit
+            '{windspeed}': (function() {
+                if (windMph === null || windMph === undefined) return '--';
+                if (speedUnit === Constants.speedUnits.KMH) {
+                    return Math.round(windKph) + 'kph';
+                }
+                return Math.round(windMph) + 'mph';
+            })(),
+            // Explicit wind speeds
+            '{windspeed_mph}': windMph !== null && windMph !== undefined ? Math.round(windMph) + 'mph' : '--',
+            '{windspeed_kph}': windKph !== null && windKph !== undefined ? Math.round(windKph) + 'kph' : '--',
+            // Wind direction
+            '{wind_direction}': weatherData.windDirection || '--',
+            // Conditions
+            '{humidity}': weatherData.humidity !== null && weatherData.humidity !== undefined ? weatherData.humidity + '%' : '--',
+            '{conditions}': weatherData.conditions || '--',
+            '{forecast}': (weatherData.forecastPeriods && weatherData.forecastPeriods.length > 0)
+                ? (weatherData.forecastPeriods[0].shortForecast || '--')
+                : '--'
+        };
+
+        var result = template;
+        for (var key in replacements) {
+            if (replacements.hasOwnProperty(key)) {
+                result = result.split(key).join(replacements[key]);
+            }
+        }
+        return result;
+    },
+
+    /**
      * Format timestamp as readable date/time
      * @param {number|string} timestamp - Unix timestamp (ms) or ISO string
      * @returns {string} Formatted string (e.g., "23 Jan 12:30 PM MST")

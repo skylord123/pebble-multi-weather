@@ -75,8 +75,12 @@ var Constants = {
         TEMPERATURE: 'temperature',
         HUMIDITY: 'humidity',
         WIND: 'wind',
-        FORECAST: 'forecast'
+        FORECAST: 'forecast',
+        CUSTOM_TEMPLATE: 'custom_template'
     },
+
+    // Default custom template for quick glance
+    defaultCustomTemplate: '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}',
 
     // Menu background modes
     menuBackgroundModes: {

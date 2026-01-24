@@ -49,9 +49,13 @@ class WeatherService {
      * Get a summary suitable for the main menu subtitle
      * @param {Object} weatherData - Weather data from fetchWeather
      * @param {string} unit - Temperature unit ('F' or 'C')
+     * @param {boolean} showBoth - Whether to show both units
+     * @param {string} speedUnit - Speed unit ('mph' or 'kmh')
+     * @param {string} quickGlance - Quick glance mode
+     * @param {string} customTemplate - Custom template string (for custom_template mode)
      * @returns {string} Summary string (e.g., "72F - H:80 L:65")
      */
-    getSummary(weatherData, unit, showBoth, speedUnit, quickGlance) {
+    getSummary(weatherData, unit, showBoth, speedUnit, quickGlance, customTemplate) {
         if (!weatherData) {
             return 'No data';
         }
@@ -72,6 +76,10 @@ class WeatherService {
                 return weatherData.forecastPeriods[0].shortForecast || 'Forecast unavailable';
             }
             return 'Forecast unavailable';
+        }
+
+        if (quickGlance === Constants.quickGlance.CUSTOM_TEMPLATE) {
+            return helpers.processCustomTemplate(customTemplate, weatherData, unit, speedUnit);
         }
 
         return helpers.formatWeatherSummary(

@@ -153,7 +153,17 @@ var SettingsMenuPage = {
         if (value === Constants.quickGlance.HUMIDITY) return 'Humidity';
         if (value === Constants.quickGlance.WIND) return 'Wind';
         if (value === Constants.quickGlance.FORECAST) return 'Forecast';
+        if (value === Constants.quickGlance.CUSTOM_TEMPLATE) return 'Custom Template';
         return 'Temperature';
+    },
+
+    updateQuickGlanceItem: function() {
+        var appState = AppState.getInstance();
+        this._updateItem(0, 1, {
+            title: 'Quick Glance',
+            subtitle: this._formatQuickGlance(appState.quickGlance),
+            id: 'quick_glance'
+        });
     },
 
     _formatMenuBackground: function(value) {

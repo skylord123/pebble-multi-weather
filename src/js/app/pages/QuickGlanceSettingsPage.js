@@ -42,7 +42,8 @@ var QuickGlanceSettingsPage = {
             this._makeItem(Constants.quickGlance.TEMPERATURE, 'Temperature', selected),
             this._makeItem(Constants.quickGlance.HUMIDITY, 'Humidity', selected),
             this._makeItem(Constants.quickGlance.WIND, 'Wind Speed', selected),
-            this._makeItem(Constants.quickGlance.FORECAST, 'Forecast', selected)
+            this._makeItem(Constants.quickGlance.FORECAST, 'Forecast', selected),
+            this._makeItem(Constants.quickGlance.CUSTOM_TEMPLATE, 'Custom Template', selected)
         ];
     },
 
@@ -67,6 +68,12 @@ var QuickGlanceSettingsPage = {
 
         this._updateSelection(selected);
         this._refreshMainMenu();
+
+        // Use late binding to avoid circular dependency
+        var SettingsMenuPage = require('app/pages/SettingsMenuPage');
+        if (SettingsMenuPage && SettingsMenuPage.updateQuickGlanceItem) {
+            SettingsMenuPage.updateQuickGlanceItem();
+        }
     },
 
     _updateSelection: function(selected) {

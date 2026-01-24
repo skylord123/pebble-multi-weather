@@ -31,6 +31,10 @@ var SettingsManager = {
         appState.quickGlance = Settings.option('quick_glance') || Constants.quickGlance.TEMPERATURE;
         log('Quick glance: ' + appState.quickGlance);
 
+        // Custom template for quick glance
+        appState.customTemplate = Settings.option('custom_template') || Constants.defaultCustomTemplate;
+        log('Custom template: ' + appState.customTemplate);
+
         // Menu background preference
         var menuBackgroundMode = Settings.option('menu_background_mode');
         if (menuBackgroundMode !== Constants.menuBackgroundModes.BLACK &&

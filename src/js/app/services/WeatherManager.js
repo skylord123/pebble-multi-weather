@@ -244,7 +244,7 @@ var WeatherManager = {
         }
 
         if (service) {
-            return service.getSummary(data, appState.temperatureUnit, appState.temperatureShowBoth, appState.speedUnit, appState.quickGlance);
+            return service.getSummary(data, appState.temperatureUnit, appState.temperatureShowBoth, appState.speedUnit, appState.quickGlance, appState.customTemplate);
         }
 
         return 'Unknown';

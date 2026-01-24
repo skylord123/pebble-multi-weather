@@ -277,6 +277,86 @@
 			background: var(--color-section-header);
 			border: 2px dashed var(--color-divider);
 		}
+
+		.form-input {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			font-size: 1rem;
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			background: var(--color-section-bg);
+			color: var(--color-text);
+		}
+
+		.template-help {
+			margin-top: 0.5rem;
+			padding: 0.6rem;
+			background: var(--color-section-header);
+			border-radius: 0.25rem;
+		}
+
+		.template-help-title {
+			font-size: 0.8rem;
+			font-weight: 600;
+			margin-bottom: 0.4rem;
+			color: var(--color-text-muted);
+		}
+
+		.template-vars {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.3rem;
+		}
+
+		.template-var {
+			display: inline-block;
+			padding: 0.2rem 0.45rem;
+			font-size: 0.75rem;
+			font-family: monospace;
+			background: var(--color-section-bg);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.2rem;
+			cursor: pointer;
+			color: var(--color-accent);
+			text-decoration: none;
+			transition: background-color 0.15s ease;
+		}
+
+		.template-var:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		.template-section {
+			border-bottom: 1px solid var(--color-divider);
+			padding-bottom: 0.4rem;
+			margin-bottom: 0.4rem;
+		}
+
+		.template-section:last-child {
+			border-bottom: none;
+			padding-bottom: 0;
+			margin-bottom: 0;
+		}
+
+		.template-section-title {
+			font-size: 0.7rem;
+			font-weight: 600;
+			color: var(--color-text-muted);
+			margin-bottom: 0.25rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		#custom-template-group {
+			display: none;
+			margin-top: 0.6rem;
+		}
+
+		#custom-template-group.visible {
+			display: block;
+		}
 	</style>
 </head>
 <body>
@@ -298,15 +378,54 @@
 	<div class="section">
 		<div class="section-header">Quick Glance</div>
 		<div class="section-body">
-			<div class="form-group" style="margin-bottom: 0;">
+			<div class="form-group">
 				<label class="form-label" for="quick-glance">Main Menu Subtitle</label>
 				<select id="quick-glance" class="form-select">
 					<option value="temperature">Temperature</option>
 					<option value="humidity">Humidity</option>
 					<option value="wind">Wind Speed</option>
 					<option value="forecast">Forecast</option>
+					<option value="custom_template">Custom Template</option>
 				</select>
-				<p class="form-text" style="margin-bottom: 0;">Choose what information displays below each provider name.</p>
+				<p class="form-text">Choose what information displays below each provider name.</p>
+			</div>
+			<div id="custom-template-group">
+				<label class="form-label" for="custom-template">Template</label>
+				<input type="text" id="custom-template" class="form-input" placeholder="{temp} H:{temp_high} L:{temp_low}">
+				<div class="template-help">
+					<div class="template-help-title">Available Variables (click to insert)</div>
+					<div class="template-section">
+						<div class="template-section-title">Temperature</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{temp}">{temp}</a>
+							<a href="#" class="template-var" data-var="{temp_f}">{temp_f}</a>
+							<a href="#" class="template-var" data-var="{temp_c}">{temp_c}</a>
+							<a href="#" class="template-var" data-var="{temp_high}">{temp_high}</a>
+							<a href="#" class="template-var" data-var="{temp_low}">{temp_low}</a>
+							<a href="#" class="template-var" data-var="{temp_f_high}">{temp_f_high}</a>
+							<a href="#" class="template-var" data-var="{temp_f_low}">{temp_f_low}</a>
+							<a href="#" class="template-var" data-var="{temp_c_high}">{temp_c_high}</a>
+							<a href="#" class="template-var" data-var="{temp_c_low}">{temp_c_low}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Wind</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{windspeed}">{windspeed}</a>
+							<a href="#" class="template-var" data-var="{windspeed_mph}">{windspeed_mph}</a>
+							<a href="#" class="template-var" data-var="{windspeed_kph}">{windspeed_kph}</a>
+							<a href="#" class="template-var" data-var="{wind_direction}">{wind_direction}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Conditions</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{humidity}">{humidity}</a>
+							<a href="#" class="template-var" data-var="{conditions}">{conditions}</a>
+							<a href="#" class="template-var" data-var="{forecast}">{forecast}</a>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -364,6 +483,8 @@
 			{ id: 'openmeteo', name: 'Open-Meteo', desc: 'Global forecast model' },
 			{ id: 'metno', name: 'Meteorologisk institutt', desc: 'MET Norway global forecast' }
 		];
+
+		var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
 
 	function decodeOptions() {
 		var hash = window.location.hash;
@@ -440,6 +561,7 @@
 			provider_order: result.order,
 			provider_enabled: result.enabled,
 			quick_glance: document.getElementById('quick-glance').value,
+			custom_template: document.getElementById('custom-template').value || DEFAULT_CUSTOM_TEMPLATE,
 			temperature_unit: document.getElementById('temp-unit').value,
 			speed_unit: document.getElementById('speed-unit').value,
 			temperature_show_both: document.getElementById('temp-show-both').checked,
@@ -447,6 +569,33 @@
 		};
 		var returnTo = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(payload));
 		window.location.href = returnTo;
+	}
+
+	function toggleCustomTemplate() {
+		var quickGlance = document.getElementById('quick-glance').value;
+		var customGroup = document.getElementById('custom-template-group');
+		if (quickGlance === 'custom_template') {
+			customGroup.classList.add('visible');
+		} else {
+			customGroup.classList.remove('visible');
+		}
+	}
+
+	function initTemplateVars() {
+		var vars = document.querySelectorAll('.template-var');
+		var input = document.getElementById('custom-template');
+		for (var i = 0; i < vars.length; i++) {
+			vars[i].addEventListener('click', function(e) {
+				e.preventDefault();
+				var varText = this.getAttribute('data-var');
+				var cursorPos = input.selectionStart;
+				var textBefore = input.value.substring(0, cursorPos);
+				var textAfter = input.value.substring(cursorPos);
+				input.value = textBefore + varText + textAfter;
+				input.focus();
+				input.selectionStart = input.selectionEnd = cursorPos + varText.length;
+			});
+		}
 	}
 
 	(function init() {
@@ -458,6 +607,7 @@
 		var tempUnit = options.temperature_unit || 'F';
 		var speedUnit = options.speed_unit || 'mph';
 		var quickGlance = options.quick_glance || 'temperature';
+		var customTemplate = options.custom_template || DEFAULT_CUSTOM_TEMPLATE;
 		var menuBackgroundMode = options.menu_background_mode || 'sun';
 		var tempShowBoth = options.temperature_show_both;
 		if (tempShowBoth === undefined || tempShowBoth === null) {
@@ -496,10 +646,16 @@
 		initSortable();
 
 		document.getElementById('quick-glance').value = quickGlance;
+		document.getElementById('custom-template').value = customTemplate;
 		document.getElementById('temp-unit').value = tempUnit;
 		document.getElementById('speed-unit').value = speedUnit;
 		document.getElementById('temp-show-both').checked = !!tempShowBoth;
 		document.getElementById('menu-background').value = menuBackgroundMode;
+
+		// Set up custom template toggle
+		document.getElementById('quick-glance').addEventListener('change', toggleCustomTemplate);
+		toggleCustomTemplate();
+		initTemplateVars();
 
 		document.getElementById('save-btn').addEventListener('click', onSave);
 	})();
