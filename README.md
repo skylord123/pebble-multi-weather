@@ -13,7 +13,8 @@ All of my projects are fully open-source and free — donations help cover time,
 
 ## Features
 
-- **Multiple Weather Providers** — View weather data from different sources
+- **Multiple Weather Providers** — View weather data from different sources. Disable/Enable providers as necessary.
+- **Re-orderable Provider List** — Change the order of providers in the main menu to suit your preferences
 - **GPS Location** — Automatically uses your current location
 - **Current Conditions** — See current temperature at a glance
 - **Daily High/Low** — Quickly check the day's temperature range

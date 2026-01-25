@@ -131,6 +131,17 @@
 			color: var(--color-text-muted);
 			margin-right: 0.75rem;
 			flex-shrink: 0;
+			padding: 0.5rem;
+			margin-left: -0.5rem;
+			touch-action: none;
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+
+		.list-group-item .fa-bars:active {
+			cursor: grabbing;
+			color: var(--color-accent);
 		}
 
 		.provider-info {
@@ -639,6 +650,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
 	<script type="text/javascript">
 		var PROVIDERS = [
 			{ id: 'nws', name: 'NWS', desc: 'National Weather Service (US only)' },
@@ -735,7 +747,12 @@
 
 	function initSortable() {
 		$('#providers-sortable').sortable({
-			placeholder: 'list-group-item'
+			handle: '.fa-bars',
+			placeholder: 'list-group-item ui-sortable-placeholder',
+			cancel: 'input, button, .provider-config-btn',
+			tolerance: 'pointer',
+			axis: 'y',
+			cursor: 'grabbing'
 		});
 	}
 
