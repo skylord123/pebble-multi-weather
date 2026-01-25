@@ -71,6 +71,8 @@ var DetailedForecastPage = {
                 icon = IconMapper.getIconForOpenMeteo(period.weatherCode);
             } else if (providerId === 'metno') {
                 icon = IconMapper.getIconForMetNo(period.symbolCode);
+            } else if (providerId === 'openweather') {
+                icon = IconMapper.getIconForOpenWeather(period.weatherCode);
             }
             items.push({
                 title: period.name,
