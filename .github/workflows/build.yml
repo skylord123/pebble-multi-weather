@@ -38,7 +38,6 @@ jobs:
           cp build/basalt/pebble-app.elf elfs/pebble-app-basalt.elf
           cp build/diorite/pebble-app.elf elfs/pebble-app-diorite.elf
           cp build/chalk/pebble-app.elf elfs/pebble-app-chalk.elf
-#          cp build/aplite/pebble-app.elf elfs/pebble-app-aplite.elf
           cp build/emery/pebble-app.elf elfs/pebble-app-emery.elf
           zip -r elfs.zip elfs
 
