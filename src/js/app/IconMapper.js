@@ -74,6 +74,14 @@ var IconMapper = {
             }
             return this.getIconForMetNo(symbolCode);
         }
+        if (providerId === 'openweather') {
+            var owmCode = weatherData.currentWeatherCode;
+            if ((owmCode === null || owmCode === undefined) && weatherData.hourlyForecast &&
+                weatherData.hourlyForecast.periods && weatherData.hourlyForecast.periods.length > 0) {
+                owmCode = weatherData.hourlyForecast.periods[0].weatherCode;
+            }
+            return this.getIconForOpenWeather(owmCode);
+        }
         return this.resolveIcon('na');
     },
 
@@ -191,6 +199,74 @@ var IconMapper = {
         if (code.indexOf('cloudy') !== -1) return this.resolveIcon('cloudy');
         if (code.indexOf('partlycloudy') !== -1) return this.resolveIcon('partlycloudy');
         if (code.indexOf('fair') !== -1 || code.indexOf('clearsky') !== -1) return this.resolveIcon('sunny');
+
+        return this.resolveIcon('na');
+    },
+
+    /**
+     * Map OpenWeatherMap weather condition codes to icons
+     * Reference: https://openweathermap.org/weather-conditions
+     *
+     * Code ranges:
+     * 2xx: Thunderstorm
+     * 3xx: Drizzle
+     * 5xx: Rain
+     * 6xx: Snow
+     * 7xx: Atmosphere
+     * 800: Clear
+     * 80x: Clouds
+     */
+    getIconForOpenWeather: function(code) {
+        if (code === null || code === undefined || isNaN(code)) {
+            return this.resolveIcon('na');
+        }
+        var id = Number(code);
+
+        // Thunderstorm (2xx)
+        if (id >= 200 && id < 300) {
+            if (id >= 200 && id <= 202) return this.resolveIcon('thundershowers');
+            if (id >= 210 && id <= 221) return this.resolveIcon('storm');
+            if (id >= 230 && id <= 232) return this.resolveIcon('thundershowers');
+            return this.resolveIcon('thundershowers');
+        }
+
+        // Drizzle (3xx)
+        if (id >= 300 && id < 400) {
+            return this.resolveIcon('drizzle');
+        }
+
+        // Rain (5xx)
+        if (id >= 500 && id < 600) {
+            if (id === 500) return this.resolveIcon('drizzle');        // Light rain
+            if (id === 511) return this.resolveIcon('mixedsnow');      // Freezing rain
+            if (id >= 520 && id <= 531) return this.resolveIcon('rain'); // Showers
+            return this.resolveIcon('rain');
+        }
+
+        // Snow (6xx)
+        if (id >= 600 && id < 700) {
+            if (id === 600) return this.resolveIcon('lightsnow');      // Light snow
+            if (id === 601) return this.resolveIcon('snow');           // Snow
+            if (id === 602) return this.resolveIcon('snow');           // Heavy snow
+            if (id >= 611 && id <= 613) return this.resolveIcon('mixedsnow'); // Sleet
+            if (id === 615 || id === 616) return this.resolveIcon('mixedsnow'); // Rain and snow
+            if (id >= 620 && id <= 622) return this.resolveIcon('snow'); // Snow showers
+            return this.resolveIcon('snow');
+        }
+
+        // Atmosphere (7xx)
+        if (id >= 700 && id < 800) {
+            if (id === 781) return this.resolveIcon('tornado');        // Tornado
+            return this.resolveIcon('lowvisibility');                  // Mist, smoke, haze, dust, fog, etc.
+        }
+
+        // Clear (800)
+        if (id === 800) return this.resolveIcon('sunny');
+
+        // Clouds (80x)
+        if (id === 801) return this.resolveIcon('partlycloudy');       // Few clouds
+        if (id === 802) return this.resolveIcon('partlycloudy');       // Scattered clouds
+        if (id === 803 || id === 804) return this.resolveIcon('cloudy'); // Broken/overcast clouds
 
         return this.resolveIcon('na');
     }

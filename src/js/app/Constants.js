@@ -36,14 +36,19 @@ var Constants = {
             fullName: 'Meteorologisk institutt',
             baseUrl: 'https://api.met.no/weatherapi/locationforecast/2.0',
             cacheDuration: 15 // minutes
+        },
+        openweather: {
+            id: 'openweather',
+            name: 'OpenWeather',
+            fullName: 'OpenWeatherMap',
+            baseUrl: 'https://api.openweathermap.org/data/3.0',
+            cacheDuration: 15, // minutes
+            requiresApiKey: true
         }
-        // Future providers can be added here:
-        // openweather: { id: 'openweather', name: 'OpenWeather', ... },
-        // weatherapi: { id: 'weatherapi', name: 'WeatherAPI', ... },
     },
 
     // Default provider order for main menu
-    providerOrder: ['nws', 'openmeteo', 'metno'],
+    providerOrder: ['nws', 'openmeteo', 'metno', 'openweather'],
 
     // HTTP request settings
     requestTimeout: 30000,

@@ -28,9 +28,19 @@ var ProviderSettingsPage = {
             var providerId = providerOrderAll[i];
             var provider = Constants.providers[providerId];
             var enabled = self._isEnabled(providerId, appState);
+            var subtitle = enabled ? 'Enabled' : 'Disabled';
+
+            // Show special subtitle for providers requiring API key without one configured
+            if (provider && provider.requiresApiKey) {
+                var hasApiKey = self._hasApiKey(providerId, appState);
+                if (!hasApiKey) {
+                    subtitle = 'No API Key';
+                }
+            }
+
             items.push({
                 title: provider ? provider.name : providerId,
-                subtitle: enabled ? 'Enabled' : 'Disabled',
+                subtitle: subtitle,
                 providerId: providerId
             });
         }
@@ -57,19 +67,48 @@ var ProviderSettingsPage = {
 
     _isEnabled: function(providerId, appState) {
         var enabledMap = appState.providerEnabled || {};
+        var provider = Constants.providers[providerId];
+
         if (enabledMap.hasOwnProperty(providerId)) {
-            return !!enabledMap[providerId];
+            var enabled = !!enabledMap[providerId];
+            // Even if marked enabled, check if API key is required but missing
+            if (enabled && provider && provider.requiresApiKey) {
+                if (!this._hasApiKey(providerId, appState)) {
+                    return false;
+                }
+            }
+            return enabled;
+        }
+
+        // Default: providers requiring API key are disabled by default
+        if (provider && provider.requiresApiKey) {
+            return false;
+        }
+        return true;
+    },
+
+    _hasApiKey: function(providerId, appState) {
+        if (providerId === 'openweather') {
+            return !!(appState.openweatherApiKey && appState.openweatherApiKey.length > 0);
         }
         return true;
     },
 
     _toggleProvider: function(providerId) {
+        var self = this;
         var appState = AppState.getInstance();
         var enabledMap = appState.providerEnabled || {};
         var current = true;
         if (enabledMap.hasOwnProperty(providerId)) {
             current = !!enabledMap[providerId];
         }
+
+        // Check if trying to enable OpenWeatherMap without API key
+        if (providerId === 'openweather' && !current && !appState.openweatherApiKey) {
+            this._showApiKeyError();
+            return;
+        }
+
         enabledMap[providerId] = !current;
 
         Settings.option('provider_enabled', enabledMap);
@@ -80,10 +119,23 @@ var ProviderSettingsPage = {
         appState.providerOrder = [];
         for (var i = 0; i < orderedProviders.length; i++) {
             var id = orderedProviders[i];
-            var isEnabled = true;
+            var provider = Constants.providers[id];
+            var isEnabled;
+
             if (enabledMap.hasOwnProperty(id)) {
                 isEnabled = !!enabledMap[id];
+            } else {
+                // Default: providers requiring API key are disabled by default
+                isEnabled = !(provider && provider.requiresApiKey);
             }
+
+            // Also check if API key is required but missing
+            if (isEnabled && provider && provider.requiresApiKey) {
+                if (!this._hasApiKey(id, appState)) {
+                    isEnabled = false;
+                }
+            }
+
             if (isEnabled) {
                 appState.providerOrder.push(id);
             }
@@ -144,6 +196,15 @@ var ProviderSettingsPage = {
         });
 
         appState.mainMenu.items(0, items);
+    },
+
+    _showApiKeyError: function() {
+        var card = new UI.Card({
+            title: 'API Key Required',
+            body: 'Please configure your OpenWeatherMap API key in the Mobile App settings for this Pebble app.',
+            scrollable: true
+        });
+        card.show();
     }
 };
 

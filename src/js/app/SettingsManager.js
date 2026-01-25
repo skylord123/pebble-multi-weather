@@ -46,6 +46,10 @@ var SettingsManager = {
         appState.customTemplate = Settings.option('custom_template') || Constants.defaultCustomTemplate;
         log('Custom template: ' + appState.customTemplate);
 
+        // OpenWeatherMap API key
+        appState.openweatherApiKey = Settings.option('openweather_api_key') || '';
+        log('OpenWeather API key configured: ' + (appState.openweatherApiKey ? 'Yes' : 'No'));
+
         // Menu background preference
         var menuBackgroundMode = Settings.option('menu_background_mode');
         if (menuBackgroundMode !== Constants.menuBackgroundModes.BLACK &&
@@ -91,10 +95,25 @@ var SettingsManager = {
         appState.providerOrder = [];
         for (var k = 0; k < orderedProviders.length; k++) {
             var id = orderedProviders[k];
-            var isEnabled = true;
+            var provider = Constants.providers[id];
+            var isEnabled;
+
+            // Check if provider is explicitly set in saved settings
             if (appState.providerEnabled && appState.providerEnabled.hasOwnProperty(id)) {
                 isEnabled = !!appState.providerEnabled[id];
+            } else {
+                // Default: providers requiring API key are disabled by default, others enabled
+                isEnabled = !(provider && provider.requiresApiKey);
             }
+
+            // For providers requiring API key, also check if API key is actually configured
+            if (isEnabled && provider && provider.requiresApiKey) {
+                if (id === 'openweather' && !appState.openweatherApiKey) {
+                    isEnabled = false;
+                    log('OpenWeather disabled: no API key configured');
+                }
+            }
+
             if (isEnabled) {
                 appState.providerOrder.push(id);
             }

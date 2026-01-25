@@ -357,6 +357,140 @@
 		#custom-template-group.visible {
 			display: block;
 		}
+
+		/* Provider config button */
+		.provider-config-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2rem;
+			height: 2rem;
+			margin-left: 0.5rem;
+			background: var(--color-section-header);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			font-size: 0.9rem;
+			flex-shrink: 0;
+		}
+
+		.provider-config-btn:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		/* Modal overlay */
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+			align-items: center;
+			justify-content: center;
+			padding: 1rem;
+		}
+
+		.modal-overlay.visible {
+			display: flex;
+		}
+
+		.modal-content {
+			background: var(--color-section-bg);
+			border-radius: 0.5rem;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+			max-width: 400px;
+			width: 100%;
+			max-height: 90vh;
+			overflow: auto;
+		}
+
+		.modal-header {
+			padding: 1rem;
+			border-bottom: 1px solid var(--color-divider);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.modal-header h2 {
+			margin: 0;
+			font-size: 1.1rem;
+		}
+
+		.modal-close {
+			background: none;
+			border: none;
+			font-size: 1.5rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			padding: 0;
+			line-height: 1;
+		}
+
+		.modal-close:hover {
+			color: var(--color-text);
+		}
+
+		.modal-body {
+			padding: 1rem;
+		}
+
+		.modal-footer {
+			padding: 1rem;
+			border-top: 1px solid var(--color-divider);
+			display: flex;
+			gap: 0.5rem;
+			justify-content: flex-end;
+		}
+
+		.api-key-input-group {
+			display: flex;
+			gap: 0.5rem;
+		}
+
+		.api-key-input-group input {
+			flex: 1;
+		}
+
+		.toggle-visibility-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2.5rem;
+			background: var(--color-section-header);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			flex-shrink: 0;
+		}
+
+		.toggle-visibility-btn:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		.form-check-input:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.api-key-hint {
+			font-size: 0.8rem;
+			color: var(--color-text-muted);
+			margin-top: 0.5rem;
+		}
+
+		.api-key-hint a {
+			color: var(--color-accent);
+		}
 	</style>
 </head>
 <body>
@@ -475,14 +609,46 @@
 	</div>
 </div>
 
+<!-- API Key Configuration Modal -->
+<div class="modal-overlay" id="api-key-modal">
+	<div class="modal-content">
+		<div class="modal-header">
+			<h2 id="modal-title">Configure API Key</h2>
+			<button type="button" class="modal-close" id="modal-close">&times;</button>
+		</div>
+		<div class="modal-body">
+			<div class="form-group">
+				<label class="form-label" for="api-key-input">API Key</label>
+				<div class="api-key-input-group">
+					<input type="password" id="api-key-input" class="form-input" placeholder="Enter your API key">
+					<button type="button" class="toggle-visibility-btn" id="toggle-api-key-visibility">
+						<i class="fa fa-eye"></i>
+					</button>
+				</div>
+				<p class="api-key-hint" id="api-key-hint">
+					Get your API key from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a>. Requires One Call API 3.0 subscription.
+				</p>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+			<button type="button" class="btn btn-primary" id="modal-save">Save</button>
+		</div>
+	</div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
 	<script type="text/javascript">
 		var PROVIDERS = [
 			{ id: 'nws', name: 'NWS', desc: 'National Weather Service (US only)' },
 			{ id: 'openmeteo', name: 'Open-Meteo', desc: 'Global forecast model' },
-			{ id: 'metno', name: 'Meteorologisk institutt', desc: 'MET Norway global forecast' }
+			{ id: 'metno', name: 'Meteorologisk institutt', desc: 'MET Norway global forecast' },
+			{ id: 'openweather', name: 'OpenWeatherMap', desc: 'Requires API key (paid)', requiresApiKey: true, apiKeySettingName: 'openweather_api_key' }
 		];
+
+		// Store for API keys
+		var apiKeys = {};
 
 		var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
 
@@ -527,10 +693,40 @@
 			info.appendChild(desc);
 			li.appendChild(info);
 
+			// Add config button for providers that require API key
+			if (provider.requiresApiKey) {
+				var configBtn = document.createElement('button');
+				configBtn.type = 'button';
+				configBtn.className = 'provider-config-btn';
+				configBtn.setAttribute('data-provider', provider.id);
+				configBtn.innerHTML = '<i class="fa fa-cog"></i>';
+				configBtn.addEventListener('click', function(e) {
+					e.stopPropagation();
+					var providerId = this.getAttribute('data-provider');
+					openApiKeyModal(providerId);
+				});
+				li.appendChild(configBtn);
+			}
+
 			var checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
 			checkbox.className = 'form-check-input';
-			checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : true;
+			checkbox.setAttribute('data-provider', provider.id);
+
+			// For providers requiring API key, disable checkbox if no key is set
+			// Also default to disabled (unchecked) if no API key
+			if (provider.requiresApiKey) {
+				var hasApiKey = apiKeys[provider.apiKeySettingName] && apiKeys[provider.apiKeySettingName].length > 0;
+				checkbox.disabled = !hasApiKey;
+				if (!hasApiKey) {
+					checkbox.checked = false;
+				} else {
+					checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : false;
+				}
+			} else {
+				checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : true;
+			}
+
 			li.appendChild(checkbox);
 
 			list.appendChild(li);
@@ -567,8 +763,97 @@
 			temperature_show_both: document.getElementById('temp-show-both').checked,
 			menu_background_mode: document.getElementById('menu-background').value
 		};
+
+		// Add API keys to payload
+		for (var key in apiKeys) {
+			if (apiKeys.hasOwnProperty(key)) {
+				payload[key] = apiKeys[key];
+			}
+		}
+
 		var returnTo = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(payload));
 		window.location.href = returnTo;
+	}
+
+	// Current provider being configured
+	var currentConfigProvider = null;
+
+	function openApiKeyModal(providerId) {
+		var provider = null;
+		for (var i = 0; i < PROVIDERS.length; i++) {
+			if (PROVIDERS[i].id === providerId) {
+				provider = PROVIDERS[i];
+				break;
+			}
+		}
+		if (!provider) return;
+
+		currentConfigProvider = provider;
+
+		// Set modal title
+		document.getElementById('modal-title').textContent = 'Configure ' + provider.name;
+
+		// Set current API key value
+		var apiKeyInput = document.getElementById('api-key-input');
+		apiKeyInput.value = apiKeys[provider.apiKeySettingName] || '';
+		apiKeyInput.type = 'password';
+
+		// Reset visibility button
+		var visBtn = document.getElementById('toggle-api-key-visibility');
+		visBtn.innerHTML = '<i class="fa fa-eye"></i>';
+
+		// Show modal
+		document.getElementById('api-key-modal').classList.add('visible');
+	}
+
+	function closeApiKeyModal() {
+		document.getElementById('api-key-modal').classList.remove('visible');
+		currentConfigProvider = null;
+	}
+
+	function toggleApiKeyVisibility() {
+		var input = document.getElementById('api-key-input');
+		var btn = document.getElementById('toggle-api-key-visibility');
+		if (input.type === 'password') {
+			input.type = 'text';
+			btn.innerHTML = '<i class="fa fa-eye-slash"></i>';
+		} else {
+			input.type = 'password';
+			btn.innerHTML = '<i class="fa fa-eye"></i>';
+		}
+	}
+
+	function saveApiKey() {
+		if (!currentConfigProvider) return;
+
+		var apiKey = document.getElementById('api-key-input').value.trim();
+		apiKeys[currentConfigProvider.apiKeySettingName] = apiKey;
+
+		// Update checkbox state
+		var checkbox = document.querySelector('input[data-provider="' + currentConfigProvider.id + '"]');
+		if (checkbox) {
+			var hasApiKey = apiKey.length > 0;
+			checkbox.disabled = !hasApiKey;
+			if (!hasApiKey) {
+				checkbox.checked = false;
+			}
+		}
+
+		closeApiKeyModal();
+	}
+
+	function initModalHandlers() {
+		document.getElementById('modal-close').addEventListener('click', closeApiKeyModal);
+		document.getElementById('modal-cancel').addEventListener('click', closeApiKeyModal);
+		document.getElementById('modal-save').addEventListener('click', saveApiKey);
+		document.getElementById('toggle-api-key-visibility').addEventListener('click', toggleApiKeyVisibility);
+
+		// Close on overlay click
+		document.getElementById('api-key-modal').addEventListener('click', function(e) {
+			if (e.target === this) {
+				closeApiKeyModal();
+			}
+		});
 	}
 
 	function toggleCustomTemplate() {
@@ -614,6 +899,13 @@
 			tempShowBoth = true;
 		}
 
+		// Load API keys from options
+		for (var p = 0; p < PROVIDERS.length; p++) {
+			if (PROVIDERS[p].requiresApiKey && PROVIDERS[p].apiKeySettingName) {
+				apiKeys[PROVIDERS[p].apiKeySettingName] = options[PROVIDERS[p].apiKeySettingName] || '';
+			}
+		}
+
 		if (!order.length) {
 			order = PROVIDERS.map(function(provider) { return provider.id; });
 		}
@@ -656,6 +948,9 @@
 		document.getElementById('quick-glance').addEventListener('change', toggleCustomTemplate);
 		toggleCustomTemplate();
 		initTemplateVars();
+
+		// Initialize modal handlers
+		initModalHandlers();
 
 		document.getElementById('save-btn').addEventListener('click', onSave);
 	})();

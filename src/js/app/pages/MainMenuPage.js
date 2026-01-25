@@ -14,6 +14,7 @@ var NWSMenuPage = require('app/pages/NWSMenuPage');
 var OpenMeteoMenuPage = require('app/pages/OpenMeteoMenuPage');
 var SettingsMenuPage = require('app/pages/SettingsMenuPage');
 var MetNoMenuPage = require('app/pages/MetNoMenuPage');
+var OpenWeatherMenuPage = require('app/pages/OpenWeatherMenuPage');
 var IconMapper = require('app/IconMapper');
 var MenuTheme = require('app/ui/MenuTheme');
 
@@ -169,9 +170,9 @@ var MainMenuPage = {
             OpenMeteoMenuPage.show();
         } else if (providerId === 'metno') {
             MetNoMenuPage.show();
+        } else if (providerId === 'openweather') {
+            OpenWeatherMenuPage.show();
         }
-        // Future providers would have their own pages:
-        // else if (providerId === 'openweather') { OpenWeatherMenuPage.show(); }
     },
 
     /**
