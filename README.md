@@ -21,9 +21,14 @@ All of my projects are fully open-source and free — donations help cover time,
 
 ## Supported Providers
 
+### Free
 - **NWS** — National Weather Service (weather.gov)
 - **Open-Meteo** — Open-Meteo (open-meteo.com)
 - **Meteorologisk institutt (MET Norway)** — met.no
+
+### Paid
+- **OpenWeatherMap** — OpenWeatherMap (openweathermap.org)
+  - Free under 1000 calls per day but still requires billing info.
 
 More providers coming soon.
 
