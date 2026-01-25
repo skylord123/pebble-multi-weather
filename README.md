@@ -18,6 +18,8 @@ All of my projects are fully open-source and free — donations help cover time,
 - **Current Conditions** — See current temperature at a glance
 - **Daily High/Low** — Quickly check the day's temperature range
 - **Auto-Refresh** — Weather data updates automatically in the background
+- **Custom Templates** — Create your own format for Quick Glance (text under a provider's name on main menu) using variables like `{temp}`, `{humidity}`, `{conditions}`, etc
+- **Sun-based Theme** — Menu background changes automatically based on sunrise/sunset times (or you can force black/white always)
 
 ## Supported Providers
 
@@ -28,9 +30,42 @@ All of my projects are fully open-source and free — donations help cover time,
 
 ### Paid
 - **OpenWeatherMap** — OpenWeatherMap (openweathermap.org)
-  - Free under 1000 calls per day but still requires billing info.
+  - Requires One Call API 3.0 subscription (free up to 1,000 calls/day, but requires billing info)
+  - Configure your API key in the mobile app settings
 
-More providers coming soon.
+## How to Use
+
+### Main Menu
+- **Select** a provider to view detailed weather information
+- **Long press** on a provider to force refresh its data
+- Scroll down to access **Settings**
+
+### Weather Details
+Each provider offers:
+- **Current Conditions** — Temperature, humidity, wind, and more
+- **Detailed Forecast** — Multi-day forecast with conditions
+- **Graphs** — Visual 24-hour forecasts for precipitation, temperature, humidity, and wind speed
+
+### Graph Navigation
+- **Up/Down** — Switch between weather providers to compare data
+- **Select** — View hour-by-hour breakdown in list format
+- **Back** — Return to provider menu
+
+### Settings (In-App)
+Access from the main menu:
+- **Providers** — Enable/disable weather providers
+- **Temp Unit** — Fahrenheit or Celsius
+- **Speed Unit** — mph or km/h
+- **Show Both Units** — Display both °F and °C
+- **Menu Background** — Sun-based (auto day/night), black, or white
+
+### Settings (Mobile App)
+Open the Pebble app on your phone and configure:
+- **Provider Order** — Drag to reorder providers in the main menu
+- **Enable/Disable Providers** — Check/uncheck to show or hide
+- **Quick Glance** — Choose what shows below each provider name (temperature, humidity, wind, forecast, or custom template)
+- **Custom Template** — Create your own format using variables like `{temp}`, `{humidity}`, `{conditions}`
+- **API Keys** — Configure keys for paid providers (click the gear icon next to OpenWeatherMap)
 
 ## License
 

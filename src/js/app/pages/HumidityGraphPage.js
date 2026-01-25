@@ -7,6 +7,7 @@ var AppState = require('app/AppState');
 var helpers = require('app/helpers');
 var Graph = require('app/ui/Graph');
 var HourlyValueListPage = require('app/pages/HourlyValueListPage');
+var GraphNavigation = require('app/helpers/GraphNavigation');
 
 var HumidityGraphPage = {
     graph: null,
@@ -16,6 +17,7 @@ var HumidityGraphPage = {
      * @param {string} providerId - Provider identifier
      */
     show: function(providerId) {
+        var self = this;
         var log = helpers.log;
         var appState = AppState.getInstance();
 
@@ -42,9 +44,11 @@ var HumidityGraphPage = {
             values.push(this._clampPercent(value));
         }
 
+        var providerName = GraphNavigation.getProviderName(providerId);
+
         this.graph = new Graph({
             title: 'Humidity',
-            subtitle: 'Next 24 hours',
+            subtitle: providerName,
             values: values,
             valueMin: 0,
             valueMax: 100,
@@ -73,6 +77,11 @@ var HumidityGraphPage = {
                         : value + '%';
                 }
             });
+        });
+
+        // Set up up/down navigation between providers
+        GraphNavigation.setupNavigation(this.graph, providerId, function(newProviderId) {
+            self.show(newProviderId);
         });
 
         this.graph.show();

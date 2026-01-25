@@ -7,6 +7,7 @@ var AppState = require('app/AppState');
 var helpers = require('app/helpers');
 var Graph = require('app/ui/Graph');
 var HourlyValueListPage = require('app/pages/HourlyValueListPage');
+var GraphNavigation = require('app/helpers/GraphNavigation');
 
 var TemperatureGraphPage = {
     graph: null,
@@ -16,6 +17,7 @@ var TemperatureGraphPage = {
      * @param {string} providerId - Provider identifier
      */
     show: function(providerId) {
+        var self = this;
         var log = helpers.log;
         var appState = AppState.getInstance();
 
@@ -33,7 +35,6 @@ var TemperatureGraphPage = {
             return;
         }
 
-        var appState = AppState.getInstance();
         var preferredUnit = appState.temperatureUnit;
         var values = [];
         for (var i = 0; i < periods.length; i++) {
@@ -48,10 +49,11 @@ var TemperatureGraphPage = {
 
         var range = this._computeRange(values);
         var yTicks = this._buildTicks(range.min, range.max, 3);
+        var providerName = GraphNavigation.getProviderName(providerId);
 
         this.graph = new Graph({
             title: 'Temperature',
-            subtitle: 'Next 24 hours',
+            subtitle: providerName,
             values: values,
             valueMin: range.min,
             valueMax: range.max,
@@ -83,6 +85,11 @@ var TemperatureGraphPage = {
                     );
                 }
             });
+        });
+
+        // Set up up/down navigation between providers
+        GraphNavigation.setupNavigation(this.graph, providerId, function(newProviderId) {
+            self.show(newProviderId);
         });
 
         this.graph.show();

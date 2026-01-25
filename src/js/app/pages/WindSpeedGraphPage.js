@@ -7,6 +7,7 @@ var AppState = require('app/AppState');
 var helpers = require('app/helpers');
 var Graph = require('app/ui/Graph');
 var HourlyValueListPage = require('app/pages/HourlyValueListPage');
+var GraphNavigation = require('app/helpers/GraphNavigation');
 
 var WindSpeedGraphPage = {
     graph: null,
@@ -16,6 +17,7 @@ var WindSpeedGraphPage = {
      * @param {string} providerId - Provider identifier
      */
     show: function(providerId) {
+        var self = this;
         var log = helpers.log;
         var appState = AppState.getInstance();
 
@@ -47,10 +49,11 @@ var WindSpeedGraphPage = {
 
         var range = this._computeRange(values);
         var yTicks = this._buildTicks(range.min, range.max, 3);
+        var providerName = GraphNavigation.getProviderName(providerId);
 
         this.graph = new Graph({
             title: preferredUnit === 'kmh' ? 'Wind Speed (kmh)' : 'Wind Speed (mph)',
-            subtitle: 'Next 24 hours',
+            subtitle: providerName,
             values: values,
             valueMin: range.min,
             valueMax: range.max,
@@ -82,6 +85,11 @@ var WindSpeedGraphPage = {
                     return Math.round(parsed) + ' mph';
                 }
             });
+        });
+
+        // Set up up/down navigation between providers
+        GraphNavigation.setupNavigation(this.graph, providerId, function(newProviderId) {
+            self.show(newProviderId);
         });
 
         this.graph.show();

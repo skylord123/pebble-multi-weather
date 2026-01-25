@@ -7,6 +7,7 @@ var AppState = require('app/AppState');
 var helpers = require('app/helpers');
 var Graph = require('app/ui/Graph');
 var HourlyValueListPage = require('app/pages/HourlyValueListPage');
+var GraphNavigation = require('app/helpers/GraphNavigation');
 
 var PrecipitationGraphPage = {
     graph: null,
@@ -16,6 +17,7 @@ var PrecipitationGraphPage = {
      * @param {string} providerId - Provider identifier
      */
     show: function(providerId) {
+        var self = this;
         var log = helpers.log;
         var appState = AppState.getInstance();
 
@@ -41,10 +43,11 @@ var PrecipitationGraphPage = {
         }
 
         var xLabels = this._buildXLabels(periods);
+        var providerName = GraphNavigation.getProviderName(providerId);
 
         this.graph = new Graph({
             title: 'Precipitation',
-            subtitle: 'Next 24 hours',
+            subtitle: providerName,
             values: values,
             valueMin: 0,
             valueMax: 100,
@@ -73,6 +76,11 @@ var PrecipitationGraphPage = {
                         : value + '%';
                 }
             });
+        });
+
+        // Set up up/down navigation between providers
+        GraphNavigation.setupNavigation(this.graph, providerId, function(newProviderId) {
+            self.show(newProviderId);
         });
 
         this.graph.show();
