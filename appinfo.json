@@ -323,7 +323,6 @@
   "sdkVersion": "3",
   "shortName": "Multi Weather",
   "targetPlatforms": [
-    "aplite",
     "basalt",
     "chalk",
     "diorite",
