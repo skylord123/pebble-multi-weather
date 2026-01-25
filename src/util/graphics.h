@@ -51,6 +51,23 @@ static inline void graphics_context_set_alpha_blended(GContext *ctx, bool enable
   }
 }
 
+static inline uint16_t gbitmap_palette_size_for_format(GBitmapFormat format) {
+  switch (format) {
+    case GBitmapFormat1BitPalette:
+      return 2;
+    case GBitmapFormat2BitPalette:
+      return 4;
+    case GBitmapFormat4BitPalette:
+      return 16;
+#ifdef GBitmapFormat8BitPalette
+    case GBitmapFormat8BitPalette:
+      return 256;
+#endif
+    default:
+      return 0;
+  }
+}
+
 static inline bool gbitmap_is_palette_black_and_white(GBitmap *bitmap) {
   if (!bitmap || gbitmap_get_format(bitmap) != GBitmapFormat1BitPalette) {
     return false;

@@ -108,6 +108,9 @@ static GColor8 s_inverted_palette[] = { { GColorWhiteARGB8 }, { GColorClearARGB8
 // On light menu background: black source -> clear, white source -> black (visible)
 static GColor8 s_dark_bg_palette[] = { { GColorClearARGB8 }, { GColorWhiteARGB8 } };
 static GColor8 s_light_bg_palette[] = { { GColorClearARGB8 }, { GColorBlackARGB8 } };
+#define MENU_PALETTE_MAX_SIZE 256
+static GColor8 s_menu_dark_palette[MENU_PALETTE_MAX_SIZE];
+static GColor8 s_menu_light_palette[MENU_PALETTE_MAX_SIZE];
 
 // Helper to determine if a color is "dark" (closer to black)
 static bool is_color_dark(GColor8 color) {
@@ -723,9 +726,11 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
   image = simply_res_get_image(self->window.simply->res, item->icon);
 #endif
   GColor8 *palette = NULL;
+  uint16_t palette_size = 0;
 
-  if (image && image->is_palette_black_and_white) {
-    palette = gbitmap_get_palette(image->bitmap);
+  if (image && image->palette && image->palette_size) {
+    palette = image->palette;
+    palette_size = image->palette_size;
     const bool is_highlighted = menu_cell_layer_is_highlighted(cell_layer);
 
     // Determine which palette to use based on the actual background color
@@ -735,11 +740,30 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
         self->menu_layer.normal_background;
     const bool dark_bg = is_color_dark(bg_color);
 
-    // Use appropriate palette based on background darkness
-    // dark_bg: use s_dark_bg_palette (black->clear, white->white) so white content shows on black
-    // light_bg: use s_light_bg_palette (black->clear, white->black) so black content shows on white
-    gbitmap_set_palette(image->bitmap, dark_bg ? s_dark_bg_palette : s_light_bg_palette,
-                        false);
+    if (image->is_palette_black_and_white && palette_size == 2) {
+      // Use appropriate palette based on background darkness
+      // dark_bg: use s_dark_bg_palette (black->clear, white->white) so white content shows on black
+      // light_bg: use s_light_bg_palette (black->clear, white->black) so black content shows on white
+      gbitmap_set_palette(image->bitmap, dark_bg ? s_dark_bg_palette : s_light_bg_palette,
+                          false);
+    } else {
+      // On color watches, only adjust black/white entries to match background; preserve colors.
+      const uint16_t max_size = palette_size > MENU_PALETTE_MAX_SIZE ? MENU_PALETTE_MAX_SIZE : palette_size;
+      GColor8 *menu_palette = dark_bg ? s_menu_dark_palette : s_menu_light_palette;
+      for (uint16_t i = 0; i < max_size; ++i) {
+        GColor8 color = palette[i];
+        if (color.a == 0) {
+          menu_palette[i] = GColor8Clear;
+        } else if (gcolor8_equal(color, GColor8Black)) {
+          menu_palette[i] = dark_bg ? GColor8Black : GColor8Clear;
+        } else if (gcolor8_equal(color, GColor8White)) {
+          menu_palette[i] = dark_bg ? GColor8White : GColor8Black;
+        } else {
+          menu_palette[i] = color;
+        }
+      }
+      gbitmap_set_palette(image->bitmap, menu_palette, false);
+    }
   }
 
   graphics_context_set_alpha_blended(ctx, true);

@@ -41,6 +41,7 @@ struct SimplyImage {
   uint8_t *bitmap_data;
   GBitmap *bitmap;
   GColor8 *palette;
+  uint16_t palette_size;
   bool is_palette_black_and_white:1;
 };
 

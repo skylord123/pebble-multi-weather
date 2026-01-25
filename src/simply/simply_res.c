@@ -36,15 +36,21 @@ static void destroy_font(SimplyRes *self, SimplyFont *font) {
 static void setup_image(SimplyImage *image) {
   image->is_palette_black_and_white = gbitmap_is_palette_black_and_white(image->bitmap);
 
-  if (!image->is_palette_black_and_white) {
+  const uint16_t palette_size = gbitmap_palette_size_for_format(gbitmap_get_format(image->bitmap));
+  if (!palette_size) {
     return;
   }
 
   GColor8 *palette = gbitmap_get_palette(image->bitmap);
-  GColor8 *palette_copy = malloc0(2 * sizeof(GColor8));
-  memcpy(palette_copy, palette, 2 * sizeof(GColor8));
+  if (!palette) {
+    return;
+  }
+
+  GColor8 *palette_copy = malloc0(palette_size * sizeof(GColor8));
+  memcpy(palette_copy, palette, palette_size * sizeof(GColor8));
   gbitmap_set_palette(image->bitmap, palette_copy, false);
   image->palette = palette_copy;
+  image->palette_size = palette_size;
 }
 
 bool simply_res_evict_image(SimplyRes *self) {
