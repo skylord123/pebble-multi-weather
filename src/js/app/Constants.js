@@ -4,7 +4,7 @@
 
 var Constants = {
     // App info
-    appVersion: '1.0',
+    appVersion: '1.1',
     appName: 'Multi Weather',
 
     // Config page settings
@@ -52,7 +52,7 @@ var Constants = {
 
     // HTTP request settings
     requestTimeout: 30000,
-    userAgent: 'PebbleMultiWeather/1.0 (contact@example.com)',
+    userAgent: 'PebbleMultiWeather/' + this.appVersion + ' (multiweather@skylarsadlier.com)',
 
     // Refresh interval in minutes
     defaultRefreshInterval: 15,
