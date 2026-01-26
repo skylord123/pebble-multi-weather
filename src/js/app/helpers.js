@@ -362,6 +362,50 @@ var helpers = {
         var minuteStr = minutes < 10 ? '0' + minutes : minutes;
 
         return day + ' ' + month + ' ' + hours + ':' + minuteStr + ' ' + ampm;
+    },
+
+    /**
+     * Format timestamp as compact date/time (only show minutes if not on the hour)
+     * @param {number|string} timestamp - Unix timestamp (ms) or ISO string
+     * @returns {string} Formatted string (e.g., "25 Jan 5PM" or "25 Jan 6:30PM")
+     */
+    formatDateTimeCompact: function(timestamp) {
+        if (!timestamp) {
+            return '--';
+        }
+
+        var date;
+        if (typeof timestamp === 'string') {
+            date = new Date(timestamp);
+        } else {
+            date = new Date(timestamp);
+        }
+
+        if (isNaN(date.getTime())) {
+            return '--';
+        }
+
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var day = date.getDate();
+        var month = months[date.getMonth()];
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+
+        // Only show minutes if not on the hour
+        var timeStr;
+        if (minutes === 0) {
+            timeStr = hours + ampm;
+        } else {
+            var minuteStr = minutes < 10 ? '0' + minutes : minutes;
+            timeStr = hours + ':' + minuteStr + ampm;
+        }
+
+        return day + ' ' + month + ' ' + timeStr;
     }
 };
 
