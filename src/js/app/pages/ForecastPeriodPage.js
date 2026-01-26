@@ -115,12 +115,15 @@ var ForecastPeriodPage = {
             subtitle: period.shortForecast || '--'
         });
 
-        // Detailed Forecast (clickable)
-        items.push({
-            title: 'Detailed Forecast',
-            subtitle: 'Tap to view...',
-            id: 'detailed'
-        });
+        // Detailed Forecast (clickable) - only show if there's a detailed forecast
+        // that's different from the short forecast
+        if (period.detailedForecast && period.detailedForecast !== period.shortForecast) {
+            items.push({
+                title: 'Detailed Forecast',
+                subtitle: 'Tap to view...',
+                id: 'detailed'
+            });
+        }
 
         return items;
     }
