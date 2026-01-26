@@ -73,6 +73,8 @@ var DetailedForecastPage = {
                 icon = IconMapper.getIconForMetNo(period.symbolCode);
             } else if (providerId === 'openweather') {
                 icon = IconMapper.getIconForOpenWeather(period.weatherCode);
+            } else if (providerId === 'weatherapi') {
+                icon = IconMapper.getIconForWeatherAPI(period.weatherCode);
             }
             items.push({
                 title: period.name,

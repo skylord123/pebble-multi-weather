@@ -82,6 +82,14 @@ var IconMapper = {
             }
             return this.getIconForOpenWeather(owmCode);
         }
+        if (providerId === 'weatherapi') {
+            var waCode = weatherData.currentWeatherCode;
+            if ((waCode === null || waCode === undefined) && weatherData.hourlyForecast &&
+                weatherData.hourlyForecast.periods && weatherData.hourlyForecast.periods.length > 0) {
+                waCode = weatherData.hourlyForecast.periods[0].weatherCode;
+            }
+            return this.getIconForWeatherAPI(waCode);
+        }
         return this.resolveIcon('na');
     },
 
@@ -267,6 +275,173 @@ var IconMapper = {
         if (id === 801) return this.resolveIcon('partlycloudy');       // Few clouds
         if (id === 802) return this.resolveIcon('partlycloudy');       // Scattered clouds
         if (id === 803 || id === 804) return this.resolveIcon('cloudy'); // Broken/overcast clouds
+
+        return this.resolveIcon('na');
+    },
+
+    /**
+     * Map WeatherAPI.com condition codes to icons
+     * Reference: https://www.weatherapi.com/docs/weather_conditions.json
+     *
+     * Code ranges:
+     * 1000: Clear/Sunny
+     * 1003-1009: Cloudy conditions
+     * 1030-1147: Fog/Mist conditions
+     * 1150-1171: Drizzle
+     * 1180-1207: Rain
+     * 1210-1237: Snow
+     * 1240-1264: Showers
+     * 1273-1282: Thunderstorms
+     */
+    getIconForWeatherAPI: function(code) {
+        if (code === null || code === undefined || isNaN(code)) {
+            return this.resolveIcon('na');
+        }
+        var id = Number(code);
+
+        // Clear/Sunny (1000)
+        if (id === 1000) return this.resolveIcon('sunny');
+
+        // Partly cloudy (1003)
+        if (id === 1003) return this.resolveIcon('partlycloudy');
+
+        // Cloudy (1006)
+        if (id === 1006) return this.resolveIcon('cloudy');
+
+        // Overcast (1009)
+        if (id === 1009) return this.resolveIcon('cloudy');
+
+        // Mist (1030)
+        if (id === 1030) return this.resolveIcon('lowvisibility');
+
+        // Patchy rain possible (1063)
+        if (id === 1063) return this.resolveIcon('drizzle');
+
+        // Patchy snow possible (1066)
+        if (id === 1066) return this.resolveIcon('lightsnow');
+
+        // Patchy sleet possible (1069)
+        if (id === 1069) return this.resolveIcon('mixedsnow');
+
+        // Patchy freezing drizzle possible (1072)
+        if (id === 1072) return this.resolveIcon('mixedsnow');
+
+        // Thundery outbreaks possible (1087)
+        if (id === 1087) return this.resolveIcon('scatteredthunderstorms');
+
+        // Blowing snow (1114)
+        if (id === 1114) return this.resolveIcon('snow');
+
+        // Blizzard (1117)
+        if (id === 1117) return this.resolveIcon('snow');
+
+        // Fog (1135)
+        if (id === 1135) return this.resolveIcon('lowvisibility');
+
+        // Freezing fog (1147)
+        if (id === 1147) return this.resolveIcon('lowvisibility');
+
+        // Patchy light drizzle (1150)
+        if (id === 1150) return this.resolveIcon('drizzle');
+
+        // Light drizzle (1153)
+        if (id === 1153) return this.resolveIcon('drizzle');
+
+        // Freezing drizzle (1168)
+        if (id === 1168) return this.resolveIcon('mixedsnow');
+
+        // Heavy freezing drizzle (1171)
+        if (id === 1171) return this.resolveIcon('mixedsnow');
+
+        // Patchy light rain (1180)
+        if (id === 1180) return this.resolveIcon('drizzle');
+
+        // Light rain (1183)
+        if (id === 1183) return this.resolveIcon('drizzle');
+
+        // Moderate rain at times (1186)
+        if (id === 1186) return this.resolveIcon('rain');
+
+        // Moderate rain (1189)
+        if (id === 1189) return this.resolveIcon('rain');
+
+        // Heavy rain at times (1192)
+        if (id === 1192) return this.resolveIcon('rain');
+
+        // Heavy rain (1195)
+        if (id === 1195) return this.resolveIcon('rain');
+
+        // Light freezing rain (1198)
+        if (id === 1198) return this.resolveIcon('mixedsnow');
+
+        // Moderate or heavy freezing rain (1201)
+        if (id === 1201) return this.resolveIcon('mixedsnow');
+
+        // Light sleet (1204)
+        if (id === 1204) return this.resolveIcon('mixedsnow');
+
+        // Moderate or heavy sleet (1207)
+        if (id === 1207) return this.resolveIcon('mixedsnow');
+
+        // Patchy light snow (1210)
+        if (id === 1210) return this.resolveIcon('lightsnow');
+
+        // Light snow (1213)
+        if (id === 1213) return this.resolveIcon('lightsnow');
+
+        // Patchy moderate snow (1216)
+        if (id === 1216) return this.resolveIcon('snow');
+
+        // Moderate snow (1219)
+        if (id === 1219) return this.resolveIcon('snow');
+
+        // Patchy heavy snow (1222)
+        if (id === 1222) return this.resolveIcon('snow');
+
+        // Heavy snow (1225)
+        if (id === 1225) return this.resolveIcon('snow');
+
+        // Ice pellets (1237)
+        if (id === 1237) return this.resolveIcon('hail');
+
+        // Light rain shower (1240)
+        if (id === 1240) return this.resolveIcon('drizzle');
+
+        // Moderate or heavy rain shower (1243)
+        if (id === 1243) return this.resolveIcon('rain');
+
+        // Torrential rain shower (1246)
+        if (id === 1246) return this.resolveIcon('rain');
+
+        // Light sleet showers (1249)
+        if (id === 1249) return this.resolveIcon('mixedsnow');
+
+        // Moderate or heavy sleet showers (1252)
+        if (id === 1252) return this.resolveIcon('mixedsnow');
+
+        // Light snow showers (1255)
+        if (id === 1255) return this.resolveIcon('lightsnow');
+
+        // Moderate or heavy snow showers (1258)
+        if (id === 1258) return this.resolveIcon('snow');
+
+        // Light showers of ice pellets (1261)
+        if (id === 1261) return this.resolveIcon('hail');
+
+        // Moderate or heavy showers of ice pellets (1264)
+        if (id === 1264) return this.resolveIcon('hail');
+
+        // Patchy light rain with thunder (1273)
+        if (id === 1273) return this.resolveIcon('isolatedthunderstorms');
+
+        // Moderate or heavy rain with thunder (1276)
+        if (id === 1276) return this.resolveIcon('thundershowers');
+
+        // Patchy light snow with thunder (1279)
+        if (id === 1279) return this.resolveIcon('storm');
+
+        // Moderate or heavy snow with thunder (1282)
+        if (id === 1282) return this.resolveIcon('storm');
 
         return this.resolveIcon('na');
     }

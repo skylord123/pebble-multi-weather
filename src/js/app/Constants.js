@@ -8,8 +8,8 @@ var Constants = {
     appName: 'Multi Weather',
 
     // Config page settings
-    CONFIG_PAGE_BASE_URL: 'https://skylord123.github.io/pebble-multi-weather/config/',
-    CONFIG_PAGE_VERSION: 'v1.0.html',
+    CONFIG_PAGE_BASE_URL: 'https://skylar.tech/uploads/pebble-multi-weather-config/',
+    CONFIG_PAGE_VERSION: 'v1.1.html',
 
     // Debug settings
     debug: true,
@@ -44,11 +44,19 @@ var Constants = {
             baseUrl: 'https://api.openweathermap.org/data/3.0',
             cacheDuration: 15, // minutes
             requiresApiKey: true
+        },
+        weatherapi: {
+            id: 'weatherapi',
+            name: 'WeatherAPI',
+            fullName: 'WeatherAPI.com',
+            baseUrl: 'https://api.weatherapi.com/v1',
+            cacheDuration: 15, // minutes
+            requiresApiKey: true
         }
     },
 
     // Default provider order for main menu
-    providerOrder: ['nws', 'openmeteo', 'metno', 'openweather'],
+    providerOrder: ['nws', 'openmeteo', 'metno', 'openweather', 'weatherapi'],
 
     // HTTP request settings
     requestTimeout: 30000,

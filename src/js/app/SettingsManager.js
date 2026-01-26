@@ -50,6 +50,10 @@ var SettingsManager = {
         appState.openweatherApiKey = Settings.option('openweather_api_key') || '';
         log('OpenWeather API key configured: ' + (appState.openweatherApiKey ? 'Yes' : 'No'));
 
+        // WeatherAPI.com API key
+        appState.weatherapiApiKey = Settings.option('weatherapi_api_key') || '';
+        log('WeatherAPI API key configured: ' + (appState.weatherapiApiKey ? 'Yes' : 'No'));
+
         // Menu background preference
         var menuBackgroundMode = Settings.option('menu_background_mode');
         if (menuBackgroundMode !== Constants.menuBackgroundModes.BLACK &&
@@ -111,6 +115,10 @@ var SettingsManager = {
                 if (id === 'openweather' && !appState.openweatherApiKey) {
                     isEnabled = false;
                     log('OpenWeather disabled: no API key configured');
+                }
+                if (id === 'weatherapi' && !appState.weatherapiApiKey) {
+                    isEnabled = false;
+                    log('WeatherAPI disabled: no API key configured');
                 }
             }
 
