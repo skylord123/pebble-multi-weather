@@ -49,10 +49,13 @@ var NWSMenuPage = {
             )
             : 'No data';
 
-        // Build forecast subtitle (first period's short forecast)
+        // Build forecast subtitle using the configured subtitle mode
         var forecastSubtitle = 'No forecast data';
         if (weatherData && weatherData.forecastPeriods && weatherData.forecastPeriods.length > 0) {
-            forecastSubtitle = weatherData.forecastPeriods[0].shortForecast;
+            forecastSubtitle = DetailedForecastPage.getSubtitleForPeriod(
+                weatherData.forecastPeriods[0],
+                weatherData.hourlyForecast
+            );
         }
 
         var hourlyAvailable = !!(weatherData && weatherData.hourlyForecast &&

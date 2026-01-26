@@ -8,7 +8,7 @@ var Constants = {
     appName: 'Multi Weather',
 
     // Config page settings
-    CONFIG_PAGE_BASE_URL: 'https://skylar.tech/uploads/pebble-multi-weather-config/',
+    CONFIG_PAGE_BASE_URL: 'https://skylord123.github.io/pebble-multi-weather/config/',
     CONFIG_PAGE_VERSION: 'v1.1.html',
 
     // Debug settings
@@ -100,7 +100,20 @@ var Constants = {
         SUN: 'sun',
         BLACK: 'black',
         WHITE: 'white'
-    }
+    },
+
+    // Detailed forecast subtitle options
+    detailedForecastSubtitle: {
+        SHORT_FORECAST: 'short_forecast',
+        LONG_FORECAST: 'long_forecast',
+        SHORT_FORECAST_TEMP: 'short_forecast_temp',
+        HIGH_LOW_TEMP: 'high_low_temp',
+        WIND: 'wind',
+        CUSTOM_TEMPLATE: 'custom_template'
+    },
+
+    // Default custom template for detailed forecast subtitle
+    defaultDetailedForecastSubtitleTemplate: '{temp} {temp_high} / {temp_low} {precip}'
 };
 
 module.exports = Constants;

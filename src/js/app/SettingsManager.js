@@ -46,6 +46,14 @@ var SettingsManager = {
         appState.customTemplate = Settings.option('custom_template') || Constants.defaultCustomTemplate;
         log('Custom template: ' + appState.customTemplate);
 
+        // Detailed forecast subtitle preference
+        appState.detailedForecastSubtitle = Settings.option('detailed_forecast_subtitle') || Constants.detailedForecastSubtitle.SHORT_FORECAST;
+        log('Detailed forecast subtitle: ' + appState.detailedForecastSubtitle);
+
+        // Custom template for detailed forecast subtitle
+        appState.detailedForecastSubtitleTemplate = Settings.option('detailed_forecast_subtitle_template') || Constants.defaultDetailedForecastSubtitleTemplate;
+        log('Detailed forecast subtitle template: ' + appState.detailedForecastSubtitleTemplate);
+
         // OpenWeatherMap API key
         appState.openweatherApiKey = Settings.option('openweather_api_key') || '';
         log('OpenWeather API key configured: ' + (appState.openweatherApiKey ? 'Yes' : 'No'));

@@ -369,6 +369,15 @@
 			display: block;
 		}
 
+		#forecast-subtitle-template-group {
+			display: none;
+			margin-top: 0.6rem;
+		}
+
+		#forecast-subtitle-template-group.visible {
+			display: block;
+		}
+
 		/* Provider config button */
 		.provider-config-btn {
 			display: inline-flex;
@@ -576,6 +585,63 @@
 	</div>
 
 	<div class="section">
+		<div class="section-header">Detailed Forecast</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="detailed-forecast-subtitle">Forecast List Subtitle</label>
+				<select id="detailed-forecast-subtitle" class="form-select">
+					<option value="short_forecast">Short Forecast</option>
+					<option value="long_forecast">Long Forecast</option>
+					<option value="short_forecast_temp">Short Forecast + High/Low</option>
+					<option value="high_low_temp">High/Low Temperature</option>
+					<option value="wind">Wind</option>
+					<option value="custom_template">Custom Template</option>
+				</select>
+				<p class="form-text">Choose what information displays below each forecast period. High/Low temp requires hourly data coverage for the period.</p>
+			</div>
+			<div id="forecast-subtitle-template-group">
+				<label class="form-label" for="forecast-subtitle-template">Template</label>
+				<input type="text" id="forecast-subtitle-template" class="form-input" placeholder="{temp} {temp_high} / {temp_low} {precip}">
+				<div class="template-help">
+					<div class="template-help-title">Available Variables (click to insert)</div>
+					<div class="template-section">
+						<div class="template-section-title">Temperature</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{temp}">{temp}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f}">{temp_f}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c}">{temp_c}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_high}">{temp_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_low}">{temp_low}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f_high}">{temp_f_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f_low}">{temp_f_low}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c_high}">{temp_c_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c_low}">{temp_c_low}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Wind</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{wind}">{wind}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed}">{windspeed}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed_mph}">{windspeed_mph}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed_kph}">{windspeed_kph}</a>
+							<a href="#" class="forecast-template-var" data-var="{wind_direction}">{wind_direction}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Forecast</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{short_forecast}">{short_forecast}</a>
+							<a href="#" class="forecast-template-var" data-var="{long_forecast}">{long_forecast}</a>
+							<a href="#" class="forecast-template-var" data-var="{precip}">{precip}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
 		<div class="section-header">Units</div>
 		<div class="section-body">
 			<div class="form-group">
@@ -664,6 +730,7 @@
 		var apiKeys = {};
 
 		var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
+		var DEFAULT_FORECAST_SUBTITLE_TEMPLATE = '{temp} {temp_high} / {temp_low} {precip}';
 
 	function decodeOptions() {
 		var hash = window.location.hash;
@@ -779,7 +846,9 @@
 			temperature_unit: document.getElementById('temp-unit').value,
 			speed_unit: document.getElementById('speed-unit').value,
 			temperature_show_both: document.getElementById('temp-show-both').checked,
-			menu_background_mode: document.getElementById('menu-background').value
+			menu_background_mode: document.getElementById('menu-background').value,
+			detailed_forecast_subtitle: document.getElementById('detailed-forecast-subtitle').value,
+			detailed_forecast_subtitle_template: document.getElementById('forecast-subtitle-template').value || DEFAULT_FORECAST_SUBTITLE_TEMPLATE
 		};
 
 		// Add API keys to payload
@@ -894,9 +963,36 @@
 		}
 	}
 
+	function toggleForecastSubtitleTemplate() {
+		var subtitleMode = document.getElementById('detailed-forecast-subtitle').value;
+		var templateGroup = document.getElementById('forecast-subtitle-template-group');
+		if (subtitleMode === 'custom_template') {
+			templateGroup.classList.add('visible');
+		} else {
+			templateGroup.classList.remove('visible');
+		}
+	}
+
 	function initTemplateVars() {
 		var vars = document.querySelectorAll('.template-var');
 		var input = document.getElementById('custom-template');
+		for (var i = 0; i < vars.length; i++) {
+			vars[i].addEventListener('click', function(e) {
+				e.preventDefault();
+				var varText = this.getAttribute('data-var');
+				var cursorPos = input.selectionStart;
+				var textBefore = input.value.substring(0, cursorPos);
+				var textAfter = input.value.substring(cursorPos);
+				input.value = textBefore + varText + textAfter;
+				input.focus();
+				input.selectionStart = input.selectionEnd = cursorPos + varText.length;
+			});
+		}
+	}
+
+	function initForecastTemplateVars() {
+		var vars = document.querySelectorAll('.forecast-template-var');
+		var input = document.getElementById('forecast-subtitle-template');
 		for (var i = 0; i < vars.length; i++) {
 			vars[i].addEventListener('click', function(e) {
 				e.preventDefault();
@@ -922,6 +1018,8 @@
 		var quickGlance = options.quick_glance || 'temperature';
 		var customTemplate = options.custom_template || DEFAULT_CUSTOM_TEMPLATE;
 		var menuBackgroundMode = options.menu_background_mode || 'sun';
+		var detailedForecastSubtitle = options.detailed_forecast_subtitle || 'short_forecast';
+		var forecastSubtitleTemplate = options.detailed_forecast_subtitle_template || DEFAULT_FORECAST_SUBTITLE_TEMPLATE;
 		var tempShowBoth = options.temperature_show_both;
 		if (tempShowBoth === undefined || tempShowBoth === null) {
 			tempShowBoth = true;
@@ -971,11 +1069,18 @@
 		document.getElementById('speed-unit').value = speedUnit;
 		document.getElementById('temp-show-both').checked = !!tempShowBoth;
 		document.getElementById('menu-background').value = menuBackgroundMode;
+		document.getElementById('detailed-forecast-subtitle').value = detailedForecastSubtitle;
+		document.getElementById('forecast-subtitle-template').value = forecastSubtitleTemplate;
 
 		// Set up custom template toggle
 		document.getElementById('quick-glance').addEventListener('change', toggleCustomTemplate);
 		toggleCustomTemplate();
 		initTemplateVars();
+
+		// Set up forecast subtitle template toggle
+		document.getElementById('detailed-forecast-subtitle').addEventListener('change', toggleForecastSubtitleTemplate);
+		toggleForecastSubtitleTemplate();
+		initForecastTemplateVars();
 
 		// Initialize modal handlers
 		initModalHandlers();

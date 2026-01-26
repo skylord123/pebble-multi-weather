@@ -9,6 +9,7 @@ var Constants = require('app/Constants');
 var helpers = require('app/helpers');
 var ProviderSettingsPage = require('app/pages/ProviderSettingsPage');
 var QuickGlanceSettingsPage = require('app/pages/QuickGlanceSettingsPage');
+var ForecastSubtitleSettingsPage = require('app/pages/ForecastSubtitleSettingsPage');
 var WeatherManager = require('app/services/WeatherManager');
 var IconMapper = require('app/IconMapper');
 var MenuTheme = require('app/ui/MenuTheme');
@@ -42,6 +43,11 @@ var SettingsMenuPage = {
                         title: 'Quick Glance',
                         subtitle: this._formatQuickGlance(appState.quickGlance),
                         id: 'quick_glance'
+                    },
+                    {
+                        title: 'Forecast Subtitle',
+                        subtitle: this._formatForecastSubtitle(appState.detailedForecastSubtitle),
+                        id: 'forecast_subtitle'
                     },
                     {
                         title: 'Temp Unit',
@@ -88,7 +94,7 @@ var SettingsMenuPage = {
                 ? Constants.units.FAHRENHEIT
                 : Constants.units.CELSIUS;
             Settings.option('temperature_unit', appState.temperatureUnit);
-            this._updateItem(0, 2, {
+            this._updateItem(0, 3, {
                 title: 'Temp Unit',
                 subtitle: this._formatUnit(appState.temperatureUnit),
                 id: 'temp_unit'
@@ -102,7 +108,7 @@ var SettingsMenuPage = {
                 ? Constants.speedUnits.MPH
                 : Constants.speedUnits.KMH;
             Settings.option('speed_unit', appState.speedUnit);
-            this._updateItem(0, 3, {
+            this._updateItem(0, 4, {
                 title: 'Speed Unit',
                 subtitle: this._formatSpeedUnit(appState.speedUnit),
                 id: 'speed_unit'
@@ -116,10 +122,15 @@ var SettingsMenuPage = {
             return;
         }
 
+        if (itemId === 'forecast_subtitle') {
+            ForecastSubtitleSettingsPage.show();
+            return;
+        }
+
         if (itemId === 'temp_both') {
             appState.temperatureShowBoth = !appState.temperatureShowBoth;
             Settings.option('temperature_show_both', appState.temperatureShowBoth);
-            this._updateItem(0, 4, {
+            this._updateItem(0, 5, {
                 title: 'Show Both Units',
                 subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
                 id: 'temp_both'
@@ -131,7 +142,7 @@ var SettingsMenuPage = {
         if (itemId === 'menu_background') {
             appState.menuBackgroundMode = this._nextMenuBackgroundMode(appState.menuBackgroundMode);
             Settings.option('menu_background_mode', appState.menuBackgroundMode);
-            this._updateItem(0, 5, {
+            this._updateItem(0, 6, {
                 title: 'Menu Background',
                 subtitle: this._formatMenuBackground(appState.menuBackgroundMode),
                 id: 'menu_background'
@@ -157,12 +168,29 @@ var SettingsMenuPage = {
         return 'Temperature';
     },
 
+    _formatForecastSubtitle: function(value) {
+        if (value === Constants.detailedForecastSubtitle.LONG_FORECAST) return 'Long Forecast';
+        if (value === Constants.detailedForecastSubtitle.SHORT_FORECAST_TEMP) return 'Short + High/Low';
+        if (value === Constants.detailedForecastSubtitle.HIGH_LOW_TEMP) return 'High/Low Temp';
+        if (value === Constants.detailedForecastSubtitle.WIND) return 'Wind';
+        return 'Short Forecast';
+    },
+
     updateQuickGlanceItem: function() {
         var appState = AppState.getInstance();
         this._updateItem(0, 1, {
             title: 'Quick Glance',
             subtitle: this._formatQuickGlance(appState.quickGlance),
             id: 'quick_glance'
+        });
+    },
+
+    updateForecastSubtitleItem: function() {
+        var appState = AppState.getInstance();
+        this._updateItem(0, 2, {
+            title: 'Forecast Subtitle',
+            subtitle: this._formatForecastSubtitle(appState.detailedForecastSubtitle),
+            id: 'forecast_subtitle'
         });
     },
 

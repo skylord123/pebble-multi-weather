@@ -43,7 +43,10 @@ var OpenMeteoMenuPage = {
 
         var forecastSubtitle = 'No forecast data';
         if (weatherData && weatherData.forecastPeriods && weatherData.forecastPeriods.length > 0) {
-            forecastSubtitle = weatherData.forecastPeriods[0].shortForecast;
+            forecastSubtitle = DetailedForecastPage.getSubtitleForPeriod(
+                weatherData.forecastPeriods[0],
+                weatherData.hourlyForecast
+            );
         }
 
         var hourlyAvailable = !!(weatherData && weatherData.hourlyForecast &&
