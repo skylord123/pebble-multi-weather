@@ -47,7 +47,8 @@ var WeatherAPIMenuPage = {
         if (weatherData && weatherData.forecastPeriods && weatherData.forecastPeriods.length > 0) {
             forecastSubtitle = DetailedForecastPage.getSubtitleForPeriod(
                 weatherData.forecastPeriods[0],
-                weatherData.hourlyForecast
+                weatherData.hourlyForecast,
+                { weatherData: weatherData, periodIndex: 0 }
             );
         }
 

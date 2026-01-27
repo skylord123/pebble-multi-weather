@@ -21,12 +21,13 @@ var DetailedForecastPage = {
      * This can be called from provider menu pages to display the forecast subtitle
      * @param {Object} period - Forecast period object
      * @param {Object} hourlyForecast - Hourly forecast data (optional)
+     * @param {Object} options - Optional context (e.g., weatherData, periodIndex)
      * @returns {string} Formatted subtitle
      */
-    getSubtitleForPeriod: function(period, hourlyForecast) {
+    getSubtitleForPeriod: function(period, hourlyForecast, options) {
         var appState = AppState.getInstance();
         var subtitleMode = appState.detailedForecastSubtitle || Constants.detailedForecastSubtitle.SHORT_FORECAST;
-        return this._getSubtitle(period, subtitleMode, hourlyForecast, appState);
+        return this._getSubtitle(period, subtitleMode, hourlyForecast, appState, options);
     },
 
     /**
@@ -47,7 +48,7 @@ var DetailedForecastPage = {
             return;
         }
 
-        var items = this._buildItems(weatherData.forecastPeriods, providerId, weatherData.hourlyForecast);
+        var items = this._buildItems(weatherData.forecastPeriods, providerId, weatherData.hourlyForecast, weatherData);
         var menuColors = MenuTheme.getMenuColors();
 
         this.menu = new UI.Menu({
@@ -73,7 +74,7 @@ var DetailedForecastPage = {
      * Build menu items from forecast periods
      * @private
      */
-    _buildItems: function(periods, providerId, hourlyForecast) {
+    _buildItems: function(periods, providerId, hourlyForecast, weatherData) {
         var items = [];
         var appState = AppState.getInstance();
         var subtitleMode = appState.detailedForecastSubtitle || Constants.detailedForecastSubtitle.SHORT_FORECAST;
@@ -93,7 +94,10 @@ var DetailedForecastPage = {
                 icon = IconMapper.getIconForWeatherAPI(period.weatherCode);
             }
 
-            var subtitle = this._getSubtitle(period, subtitleMode, hourlyForecast, appState);
+            var subtitle = this._getSubtitle(period, subtitleMode, hourlyForecast, appState, {
+                weatherData: weatherData,
+                periodIndex: i
+            });
 
             items.push({
                 title: period.name,
@@ -110,7 +114,7 @@ var DetailedForecastPage = {
      * Get the subtitle for a forecast period based on the configured mode
      * @private
      */
-    _getSubtitle: function(period, subtitleMode, hourlyForecast, appState) {
+    _getSubtitle: function(period, subtitleMode, hourlyForecast, appState, options) {
         var highLow;
 
         switch (subtitleMode) {
@@ -118,7 +122,7 @@ var DetailedForecastPage = {
                 return period.detailedForecast || period.shortForecast || '';
 
             case Constants.detailedForecastSubtitle.SHORT_FORECAST_TEMP:
-                highLow = this._getHighLowFromHourly(period, hourlyForecast);
+                highLow = this._getHighLowFromHourly(period, hourlyForecast, options);
                 if (highLow) {
                     var tempStr = this._formatHighLow(highLow, appState);
                     return (period.shortForecast || '') + ' ' + tempStr;
@@ -126,7 +130,7 @@ var DetailedForecastPage = {
                 return period.shortForecast || '';
 
             case Constants.detailedForecastSubtitle.HIGH_LOW_TEMP:
-                highLow = this._getHighLowFromHourly(period, hourlyForecast);
+                highLow = this._getHighLowFromHourly(period, hourlyForecast, options);
                 if (highLow) {
                     return this._formatHighLow(highLow, appState);
                 }
@@ -136,7 +140,7 @@ var DetailedForecastPage = {
                 return this._formatWind(period);
 
             case Constants.detailedForecastSubtitle.CUSTOM_TEMPLATE:
-                return this._processSubtitleTemplate(period, hourlyForecast, appState);
+                return this._processSubtitleTemplate(period, hourlyForecast, appState, options);
 
             case Constants.detailedForecastSubtitle.SHORT_FORECAST:
             default:
@@ -148,13 +152,13 @@ var DetailedForecastPage = {
      * Process a custom template for forecast subtitle
      * @private
      */
-    _processSubtitleTemplate: function(period, hourlyForecast, appState) {
+    _processSubtitleTemplate: function(period, hourlyForecast, appState, options) {
         var template = appState.detailedForecastSubtitleTemplate || Constants.defaultDetailedForecastSubtitleTemplate;
         var unit = appState.temperatureUnit || 'F';
         var speedUnit = appState.speedUnit || Constants.speedUnits.MPH;
 
         // Get high/low from hourly data
-        var highLow = this._getHighLowFromHourly(period, hourlyForecast);
+        var highLow = this._getHighLowFromHourly(period, hourlyForecast, options);
         var highF = highLow ? highLow.high : null;
         var lowF = highLow ? highLow.low : null;
         var highC = highF !== null ? helpers.fahrenheitToCelsius(highF) : null;
@@ -219,12 +223,13 @@ var DetailedForecastPage = {
      * Calculate high/low temperature from hourly forecast data for a period
      * @private
      */
-    _getHighLowFromHourly: function(period, hourlyForecast) {
+    _getHighLowFromHourly: function(period, hourlyForecast, options) {
+        var fallback = this._getFallbackHighLow(options);
         if (!hourlyForecast || !hourlyForecast.periods || !hourlyForecast.periods.length) {
-            return null;
+            return fallback;
         }
         if (!period.startTime || !period.endTime) {
-            return null;
+            return fallback;
         }
 
         var periodStart = period.startTime;
@@ -260,19 +265,31 @@ var DetailedForecastPage = {
         }
 
         if (matchingTemps.length === 0) {
-            return null;
+            return fallback;
         }
 
         // Check if we have reasonable coverage of the period
         // Allow some tolerance (within 1 hour of start and end)
         var tolerance = 3600000; // 1 hour in ms
         if (coveredStart > periodStart + tolerance || coveredEnd < periodEnd - tolerance) {
-            return null;
+            return fallback;
         }
 
         var high = Math.max.apply(null, matchingTemps);
         var low = Math.min.apply(null, matchingTemps);
 
+        return { high: Math.round(high), low: Math.round(low) };
+    },
+
+    _getFallbackHighLow: function(options) {
+        if (!options || options.periodIndex !== 0 || !options.weatherData) {
+            return null;
+        }
+        var high = options.weatherData.highTemp;
+        var low = options.weatherData.lowTemp;
+        if (high === null || high === undefined || low === null || low === undefined) {
+            return null;
+        }
         return { high: Math.round(high), low: Math.round(low) };
     },
 
