@@ -65,7 +65,7 @@ var SettingsMenuPage = {
                         id: 'speed_unit'
                     },
                     {
-                        title: 'Show Both Units',
+                        title: 'Show both temperature units',
                         subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
                         id: 'temp_both'
                     },

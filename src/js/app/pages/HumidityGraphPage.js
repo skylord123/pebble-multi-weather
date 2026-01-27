@@ -90,6 +90,10 @@ var HumidityGraphPage = {
     _buildXLabels: function(periods) {
         var labels = [];
         var labelIndexes = [0, 6, 12, 18];
+        var lastIndex = periods.length - 1;
+        if (lastIndex > 0 && labelIndexes.indexOf(lastIndex) === -1) {
+            labelIndexes.push(lastIndex);
+        }
         for (var i = 0; i < labelIndexes.length; i++) {
             var idx = labelIndexes[i];
             if (periods[idx]) {
