@@ -103,26 +103,11 @@ var TemperatureGraphPage = {
             if (periods[idx]) {
                 labels.push({
                     index: idx,
-                    text: this._formatHour(periods[idx].startTime)
+                    text: helpers.formatHourForGraph(periods[idx].startTime)
                 });
             }
         }
         return labels;
-    },
-
-    _formatHour: function(timestamp) {
-        if (!timestamp) {
-            return '--';
-        }
-        var date = new Date(timestamp);
-        if (isNaN(date.getTime())) {
-            return '--';
-        }
-        var hours = date.getHours();
-        var suffix = hours >= 12 ? 'p' : 'a';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        return hours + suffix;
     },
 
     _toNumber: function(value) {

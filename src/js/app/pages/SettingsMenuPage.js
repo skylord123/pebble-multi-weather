@@ -50,6 +50,11 @@ var SettingsMenuPage = {
                         id: 'forecast_subtitle'
                     },
                     {
+                        title: 'Time Format',
+                        subtitle: this._formatTimeFormat(appState.timeFormat),
+                        id: 'time_format'
+                    },
+                    {
                         title: 'Temp Unit',
                         subtitle: this._formatUnit(appState.temperatureUnit),
                         id: 'temp_unit'
@@ -117,6 +122,19 @@ var SettingsMenuPage = {
             return;
         }
 
+        if (itemId === 'time_format') {
+            appState.timeFormat = (appState.timeFormat === Constants.timeFormats.HOUR_24)
+                ? Constants.timeFormats.HOUR_12
+                : Constants.timeFormats.HOUR_24;
+            Settings.option('time_format', appState.timeFormat);
+            this._updateItem(0, 5, {
+                title: 'Time Format',
+                subtitle: this._formatTimeFormat(appState.timeFormat),
+                id: 'time_format'
+            });
+            return;
+        }
+
         if (itemId === 'quick_glance') {
             QuickGlanceSettingsPage.show();
             return;
@@ -130,7 +148,7 @@ var SettingsMenuPage = {
         if (itemId === 'temp_both') {
             appState.temperatureShowBoth = !appState.temperatureShowBoth;
             Settings.option('temperature_show_both', appState.temperatureShowBoth);
-            this._updateItem(0, 5, {
+            this._updateItem(0, 6, {
                 title: 'Show Both Units',
                 subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
                 id: 'temp_both'
@@ -142,7 +160,7 @@ var SettingsMenuPage = {
         if (itemId === 'menu_background') {
             appState.menuBackgroundMode = this._nextMenuBackgroundMode(appState.menuBackgroundMode);
             Settings.option('menu_background_mode', appState.menuBackgroundMode);
-            this._updateItem(0, 6, {
+            this._updateItem(0, 7, {
                 title: 'Menu Background',
                 subtitle: this._formatMenuBackground(appState.menuBackgroundMode),
                 id: 'menu_background'
@@ -160,6 +178,10 @@ var SettingsMenuPage = {
         return unit === Constants.speedUnits.KMH ? 'Kilometers (kmh)' : 'Miles (mph)';
     },
 
+    _formatTimeFormat: function(format) {
+        return format === Constants.timeFormats.HOUR_24 ? '24-hour (17:00)' : '12-hour (5PM)';
+    },
+
     _formatQuickGlance: function(value) {
         if (value === Constants.quickGlance.HUMIDITY) return 'Humidity';
         if (value === Constants.quickGlance.WIND) return 'Wind';
@@ -173,6 +195,7 @@ var SettingsMenuPage = {
         if (value === Constants.detailedForecastSubtitle.SHORT_FORECAST_TEMP) return 'Short + High/Low';
         if (value === Constants.detailedForecastSubtitle.HIGH_LOW_TEMP) return 'High/Low Temp';
         if (value === Constants.detailedForecastSubtitle.WIND) return 'Wind';
+        if (value === Constants.detailedForecastSubtitle.CUSTOM_TEMPLATE) return 'Custom Template';
         return 'Short Forecast';
     },
 

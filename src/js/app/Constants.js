@@ -80,6 +80,15 @@ var Constants = {
         KMH: 'kmh'
     },
 
+    // Time format
+    timeFormats: {
+        HOUR_12: '12h',
+        HOUR_24: '24h'
+    },
+
+    // Default time format
+    defaultTimeFormat: '12h',
+
     // Default temperature unit
     defaultUnit: 'F',
 

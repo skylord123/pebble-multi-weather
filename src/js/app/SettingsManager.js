@@ -38,6 +38,10 @@ var SettingsManager = {
         appState.speedUnit = Settings.option('speed_unit') || Constants.speedUnits.MPH;
         log('Speed unit: ' + appState.speedUnit);
 
+        // Time format preference
+        appState.timeFormat = Settings.option('time_format') || Constants.defaultTimeFormat;
+        log('Time format: ' + appState.timeFormat);
+
         // Quick glance preference (main menu subtitle)
         appState.quickGlance = Settings.option('quick_glance') || Constants.quickGlance.TEMPERATURE;
         log('Quick glance: ' + appState.quickGlance);

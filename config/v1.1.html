@@ -656,11 +656,18 @@
 				<input type="checkbox" id="temp-show-both">
 			</div>
 			<p class="form-text">When enabled, displays both °F and °C values.</p>
-			<div class="form-group" style="margin-bottom: 0;">
+			<div class="form-group">
 				<label class="form-label" for="speed-unit">Wind Speed</label>
 				<select id="speed-unit" class="form-select">
 					<option value="mph">Miles per hour (mph)</option>
 					<option value="kmh">Kilometers per hour (km/h)</option>
+				</select>
+			</div>
+			<div class="form-group" style="margin-bottom: 0;">
+				<label class="form-label" for="time-format">Time Format</label>
+				<select id="time-format" class="form-select">
+					<option value="12h">12-hour (5PM)</option>
+					<option value="24h">24-hour (17:00)</option>
 				</select>
 			</div>
 		</div>
@@ -845,6 +852,7 @@
 			custom_template: document.getElementById('custom-template').value || DEFAULT_CUSTOM_TEMPLATE,
 			temperature_unit: document.getElementById('temp-unit').value,
 			speed_unit: document.getElementById('speed-unit').value,
+			time_format: document.getElementById('time-format').value,
 			temperature_show_both: document.getElementById('temp-show-both').checked,
 			menu_background_mode: document.getElementById('menu-background').value,
 			detailed_forecast_subtitle: document.getElementById('detailed-forecast-subtitle').value,
@@ -1015,6 +1023,7 @@
 			: {};
 		var tempUnit = options.temperature_unit || 'F';
 		var speedUnit = options.speed_unit || 'mph';
+		var timeFormat = options.time_format || '12h';
 		var quickGlance = options.quick_glance || 'temperature';
 		var customTemplate = options.custom_template || DEFAULT_CUSTOM_TEMPLATE;
 		var menuBackgroundMode = options.menu_background_mode || 'sun';
@@ -1067,6 +1076,7 @@
 		document.getElementById('custom-template').value = customTemplate;
 		document.getElementById('temp-unit').value = tempUnit;
 		document.getElementById('speed-unit').value = speedUnit;
+		document.getElementById('time-format').value = timeFormat;
 		document.getElementById('temp-show-both').checked = !!tempShowBoth;
 		document.getElementById('menu-background').value = menuBackgroundMode;
 		document.getElementById('detailed-forecast-subtitle').value = detailedForecastSubtitle;
