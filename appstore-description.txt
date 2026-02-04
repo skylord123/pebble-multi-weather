@@ -1,0 +1,39 @@
+Multi Weather is a Pebble smartwatch app that lets you view weather information from multiple weather providers in one place. Quickly check current conditions, daily high and low temperatures, and detailed forecasts right from your wrist.
+
+Unlike single-source weather apps, Multi Weather allows you to enable multiple providers and switch between them to compare data. You can reorder providers, disable ones you do not want, and customize what information is shown in the main menu.
+
+Features:
+
+* Support for multiple weather providers
+* Enable or disable providers individually
+* Reorder providers in the main menu
+* Automatic GPS-based location
+* Current temperature and conditions
+* Daily high and low temperatures
+* Automatic background refresh
+* Customizable “Quick Glance” text using templates
+* Menu theme that adapts to sunrise and sunset, or can be forced to light or dark
+
+Available Weather Providers:
+
+Free:
+
+* National Weather Service (NWS) – USA only
+* Open-Meteo
+* MET Norway (Meteorologisk institutt)
+
+Paid:
+
+* OpenWeatherMap
+  Requires an API key and a One Call API 3.0 subscription (free tier available, billing info required)
+
+Controls are designed specifically for Pebble:
+
+* Select a provider to view detailed weather information
+* Long-press a provider to force a refresh
+* Scroll down to access in-app settings
+* Use buttons to switch between providers and view hourly breakdowns in graphs and lists
+
+Settings can be configured directly on the watch or through the Pebble mobile app, including temperature units, speed units, provider order, quick glance content, custom templates, and API keys.
+
+Multi Weather is fully open-source and designed to give Pebble users flexibility, transparency, and choice when it comes to weather data.

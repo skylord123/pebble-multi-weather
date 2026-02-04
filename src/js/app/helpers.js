@@ -3,6 +3,7 @@
  */
 
 var Constants = require('app/Constants');
+var AppState = require('app/AppState');
 
 var helpers = {
     /**
@@ -331,7 +332,7 @@ var helpers = {
     /**
      * Format timestamp as readable date/time
      * @param {number|string} timestamp - Unix timestamp (ms) or ISO string
-     * @returns {string} Formatted string (e.g., "23 Jan 12:30 PM MST")
+     * @returns {string} Formatted string (e.g., "23 Jan 12:30 PM" or "23 Jan 12:30")
      */
     formatDateTime: function(timestamp) {
         if (!timestamp) {
@@ -349,19 +350,154 @@ var helpers = {
             return '--';
         }
 
+        var appState = AppState.getInstance();
+        var use24Hour = appState.timeFormat === Constants.timeFormats.HOUR_24;
+
         var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         var day = date.getDate();
         var month = months[date.getMonth()];
         var hours = date.getHours();
         var minutes = date.getMinutes();
-        var ampm = hours >= 12 ? 'PM' : 'AM';
-
-        hours = hours % 12;
-        hours = hours ? hours : 12;
         var minuteStr = minutes < 10 ? '0' + minutes : minutes;
 
-        return day + ' ' + month + ' ' + hours + ':' + minuteStr + ' ' + ampm;
+        var timeStr;
+        if (use24Hour) {
+            var hourStr = hours < 10 ? '0' + hours : hours;
+            timeStr = hourStr + ':' + minuteStr;
+        } else {
+            var ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            timeStr = hours + ':' + minuteStr + ' ' + ampm;
+        }
+
+        return day + ' ' + month + ' ' + timeStr;
+    },
+
+    /**
+     * Format hour for graph x-axis labels
+     * @param {number|string} timestamp - Unix timestamp (ms) or ISO string
+     * @returns {string} Formatted hour (e.g., "5p" or "17h")
+     */
+    formatHourForGraph: function(timestamp) {
+        if (!timestamp) {
+            return '--';
+        }
+        var date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+            return '--';
+        }
+
+        var appState = AppState.getInstance();
+        var use24Hour = appState.timeFormat === Constants.timeFormats.HOUR_24;
+        var hours = date.getHours();
+
+        if (use24Hour) {
+            return hours + 'h';
+        } else {
+            var suffix = hours >= 12 ? 'p' : 'a';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return hours + suffix;
+        }
+    },
+
+    /**
+     * Format hour label for hourly list (includes date if not today)
+     * @param {number|string} timestamp - Unix timestamp (ms) or ISO string
+     * @returns {string} Formatted hour with optional date (e.g., "5p" or "Jan 25 17h")
+     */
+    formatHourLabel: function(timestamp) {
+        if (!timestamp) {
+            return '--';
+        }
+        var date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+            return '--';
+        }
+
+        var appState = AppState.getInstance();
+        var use24Hour = appState.timeFormat === Constants.timeFormats.HOUR_24;
+        var hours = date.getHours();
+
+        var hourText;
+        if (use24Hour) {
+            hourText = hours + 'h';
+        } else {
+            var suffix = hours >= 12 ? 'p' : 'a';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            hourText = hours + suffix;
+        }
+
+        // Check if date is today
+        var now = new Date();
+        var isToday = date.getFullYear() === now.getFullYear() &&
+            date.getMonth() === now.getMonth() &&
+            date.getDate() === now.getDate();
+
+        if (!isToday) {
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var month = months[date.getMonth()];
+            var day = date.getDate();
+            return month + ' ' + day + ' ' + hourText;
+        }
+        return hourText;
+    },
+
+    /**
+     * Format timestamp as compact date/time (only show minutes if not on the hour)
+     * @param {number|string} timestamp - Unix timestamp (ms) or ISO string
+     * @returns {string} Formatted string (e.g., "25 Jan 5PM" or "25 Jan 17:00")
+     */
+    formatDateTimeCompact: function(timestamp) {
+        if (!timestamp) {
+            return '--';
+        }
+
+        var date;
+        if (typeof timestamp === 'string') {
+            date = new Date(timestamp);
+        } else {
+            date = new Date(timestamp);
+        }
+
+        if (isNaN(date.getTime())) {
+            return '--';
+        }
+
+        var appState = AppState.getInstance();
+        var use24Hour = appState.timeFormat === Constants.timeFormats.HOUR_24;
+
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var day = date.getDate();
+        var month = months[date.getMonth()];
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+
+        var timeStr;
+        if (use24Hour) {
+            // 24-hour format: always show as HH:MM (e.g., "17:00" or "17:30")
+            var hourStr = hours < 10 ? '0' + hours : hours;
+            var minuteStr = minutes < 10 ? '0' + minutes : minutes;
+            timeStr = hourStr + ':' + minuteStr;
+        } else {
+            // 12-hour format: only show minutes if not on the hour
+            var ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            if (minutes === 0) {
+                timeStr = hours + ampm;
+            } else {
+                var minuteStr12 = minutes < 10 ? '0' + minutes : minutes;
+                timeStr = hours + ':' + minuteStr12 + ampm;
+            }
+        }
+
+        return day + ' ' + month + ' ' + timeStr;
     }
 };
 

@@ -45,7 +45,11 @@ var OpenWeatherMenuPage = {
 
         var forecastSubtitle = 'No forecast data';
         if (weatherData && weatherData.forecastPeriods && weatherData.forecastPeriods.length > 0) {
-            forecastSubtitle = weatherData.forecastPeriods[0].shortForecast;
+            forecastSubtitle = DetailedForecastPage.getSubtitleForPeriod(
+                weatherData.forecastPeriods[0],
+                weatherData.hourlyForecast,
+                { weatherData: weatherData, periodIndex: 0 }
+            );
         }
 
         var hourlyAvailable = !!(weatherData && weatherData.hourlyForecast &&
@@ -98,6 +102,46 @@ var OpenWeatherMenuPage = {
         });
 
         this.menu.show();
+    },
+
+    updateMenu: function() {
+        if (!this.menu) {
+            return;
+        }
+
+        var appState = AppState.getInstance();
+        var weatherData = appState.getWeatherData('openweather');
+        var subtitle = weatherData
+            ? helpers.formatWeatherSummary(
+                weatherData.currentTemp,
+                weatherData.highTemp,
+                weatherData.lowTemp,
+                appState.temperatureUnit,
+                appState.temperatureShowBoth
+            )
+            : 'No data';
+
+        var forecastSubtitle = 'No forecast data';
+        if (weatherData && weatherData.forecastPeriods && weatherData.forecastPeriods.length > 0) {
+            forecastSubtitle = DetailedForecastPage.getSubtitleForPeriod(
+                weatherData.forecastPeriods[0],
+                weatherData.hourlyForecast,
+                { weatherData: weatherData, periodIndex: 0 }
+            );
+        }
+
+        var hourlyAvailable = !!(weatherData && weatherData.hourlyForecast &&
+            weatherData.hourlyForecast.periods && weatherData.hourlyForecast.periods.length > 0);
+        var hourlySubtitle = hourlyAvailable ? 'Next 48 hours' : 'No hourly data';
+
+        var currentIcon = IconMapper.getIconForProvider('openweather', weatherData);
+
+        this.menu.item(0, 0, { title: 'Current', subtitle: subtitle, id: 'current', icon: currentIcon });
+        this.menu.item(0, 1, { title: 'Detailed Forecast', subtitle: forecastSubtitle, id: 'forecast' });
+        this.menu.item(0, 2, { title: 'Precipitation', subtitle: hourlySubtitle, id: 'precipitation' });
+        this.menu.item(0, 3, { title: 'Temperature', subtitle: hourlySubtitle, id: 'temperature' });
+        this.menu.item(0, 4, { title: 'Humidity', subtitle: hourlySubtitle, id: 'humidity' });
+        this.menu.item(0, 5, { title: 'Wind Speed', subtitle: hourlySubtitle, id: 'wind' });
     },
 
     _showError: function(error) {

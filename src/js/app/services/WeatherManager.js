@@ -12,6 +12,7 @@ var NWSService = require('app/services/NWSService');
 var OpenMeteoService = require('app/services/OpenMeteoService');
 var MetNoService = require('app/services/MetNoService');
 var OpenWeatherService = require('app/services/OpenWeatherService');
+var WeatherAPIService = require('app/services/WeatherAPIService');
 var CacheManager = require('app/services/CacheManager');
 
 var WeatherManager = {
@@ -30,6 +31,7 @@ var WeatherManager = {
         this.services.openmeteo = new OpenMeteoService();
         this.services.metno = new MetNoService();
         this.services.openweather = new OpenWeatherService();
+        this.services.weatherapi = new WeatherAPIService();
     },
 
     /**

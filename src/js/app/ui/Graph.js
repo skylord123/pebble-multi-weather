@@ -73,8 +73,8 @@ Graph.prototype._draw = function() {
         marginTop += 16;
     }
     marginTop += roundInset;
-    var marginLeft = (opts.marginLeft || 28) + roundInset;
-    var marginRight = (opts.marginRight || 6) + roundInset;
+    var marginLeft = (opts.marginLeft || 34) + roundInset;
+    var marginRight = (opts.marginRight || 16) + roundInset;
     var marginBottom = (opts.marginBottom || 18) + roundInset;
 
     var plotWidth = Math.max(1, size.x - marginLeft - marginRight);

@@ -38,6 +38,10 @@ var SettingsManager = {
         appState.speedUnit = Settings.option('speed_unit') || Constants.speedUnits.MPH;
         log('Speed unit: ' + appState.speedUnit);
 
+        // Time format preference
+        appState.timeFormat = Settings.option('time_format') || Constants.defaultTimeFormat;
+        log('Time format: ' + appState.timeFormat);
+
         // Quick glance preference (main menu subtitle)
         appState.quickGlance = Settings.option('quick_glance') || Constants.quickGlance.TEMPERATURE;
         log('Quick glance: ' + appState.quickGlance);
@@ -46,9 +50,21 @@ var SettingsManager = {
         appState.customTemplate = Settings.option('custom_template') || Constants.defaultCustomTemplate;
         log('Custom template: ' + appState.customTemplate);
 
+        // Detailed forecast subtitle preference
+        appState.detailedForecastSubtitle = Settings.option('detailed_forecast_subtitle') || Constants.detailedForecastSubtitle.SHORT_FORECAST;
+        log('Detailed forecast subtitle: ' + appState.detailedForecastSubtitle);
+
+        // Custom template for detailed forecast subtitle
+        appState.detailedForecastSubtitleTemplate = Settings.option('detailed_forecast_subtitle_template') || Constants.defaultDetailedForecastSubtitleTemplate;
+        log('Detailed forecast subtitle template: ' + appState.detailedForecastSubtitleTemplate);
+
         // OpenWeatherMap API key
         appState.openweatherApiKey = Settings.option('openweather_api_key') || '';
         log('OpenWeather API key configured: ' + (appState.openweatherApiKey ? 'Yes' : 'No'));
+
+        // WeatherAPI.com API key
+        appState.weatherapiApiKey = Settings.option('weatherapi_api_key') || '';
+        log('WeatherAPI API key configured: ' + (appState.weatherapiApiKey ? 'Yes' : 'No'));
 
         // Menu background preference
         var menuBackgroundMode = Settings.option('menu_background_mode');
@@ -111,6 +127,10 @@ var SettingsManager = {
                 if (id === 'openweather' && !appState.openweatherApiKey) {
                     isEnabled = false;
                     log('OpenWeather disabled: no API key configured');
+                }
+                if (id === 'weatherapi' && !appState.weatherapiApiKey) {
+                    isEnabled = false;
+                    log('WeatherAPI disabled: no API key configured');
                 }
             }
 

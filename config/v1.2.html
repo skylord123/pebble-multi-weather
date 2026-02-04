@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Multi Weather Config</title>
+	<script src="https://use.fontawesome.com/3a291b24ff.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="color-scheme" content="light dark">
+	<style>
+		:root {
+			--color-accent: #2d7a6b;
+			--color-accent-dark: #1f5a50;
+			--color-background: #f0f3f4;
+			--color-section-bg: #ffffff;
+			--color-section-header: #e7ecef;
+			--color-text: #1f2a30;
+			--color-text-muted: #5d6b73;
+			--color-divider: #d7dee2;
+			--shadow-section: 0 0.2rem 0.35rem rgba(0,0,0,0.12);
+			--shadow-button: 0 0.1rem 0.1rem rgba(0,0,0,0.1);
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--color-accent: #69c6b3;
+				--color-accent-dark: #3b8f80;
+				--color-background: #1f2427;
+				--color-section-bg: #2b3136;
+				--color-section-header: #24292d;
+				--color-text: #f4f6f7;
+				--color-text-muted: #9aa6ad;
+				--color-divider: #3b4248;
+				--shadow-section: 0 0.2rem 0.35rem rgba(0,0,0,0.4);
+				--shadow-button: 0 0.1rem 0.1rem rgba(0,0,0,0.3);
+			}
+		}
+
+		*, *:before, *:after {
+			box-sizing: border-box;
+		}
+
+		html, body {
+			margin: 0;
+			padding: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			font-size: 17px;
+			line-height: 1.4;
+			-webkit-font-smoothing: antialiased;
+			background-color: var(--color-background);
+			color: var(--color-text);
+		}
+
+		.container {
+			max-width: 640px;
+			margin: 0 auto;
+			padding: 0 0.9rem 1.5rem;
+		}
+
+		.page-header {
+			padding: 1.2rem 0 0.6rem;
+			text-align: center;
+		}
+
+		.page-header h1 {
+			margin: 0 0 0.3rem;
+			font-size: 1.35rem;
+			font-weight: 700;
+			letter-spacing: 0.02em;
+		}
+
+		.page-header p {
+			margin: 0;
+			font-size: 0.9rem;
+			color: var(--color-text-muted);
+		}
+
+		.section {
+			background: var(--color-section-bg);
+			border-radius: 0.3rem;
+			box-shadow: var(--shadow-section);
+			margin-top: 1rem;
+			overflow: hidden;
+		}
+
+		.section-header {
+			background: var(--color-section-header);
+			padding: 0.7rem 0.9rem;
+			font-size: 0.85rem;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.section-body {
+			padding: 0.9rem;
+		}
+
+		.form-text {
+			font-size: 0.85rem;
+			color: var(--color-text-muted);
+			margin: 0.2rem 0 0.8rem;
+		}
+
+		.list-group {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		.list-group-item {
+			display: flex;
+			align-items: center;
+			padding: 0.65rem 0.7rem;
+			border: 1px solid var(--color-divider);
+			background: var(--color-section-bg);
+			margin-top: -1px;
+		}
+
+		.list-group-item:first-child {
+			border-top-left-radius: 0.25rem;
+			border-top-right-radius: 0.25rem;
+		}
+
+		.list-group-item:last-child {
+			border-bottom-left-radius: 0.25rem;
+			border-bottom-right-radius: 0.25rem;
+		}
+
+		.list-group-item .fa-bars {
+			cursor: grab;
+			color: var(--color-text-muted);
+			margin-right: 0.75rem;
+			flex-shrink: 0;
+			padding: 0.5rem;
+			margin-left: -0.5rem;
+			touch-action: none;
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+
+		.list-group-item .fa-bars:active {
+			cursor: grabbing;
+			color: var(--color-accent);
+		}
+
+		.provider-info {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.provider-name {
+			font-weight: 600;
+			font-size: 0.98rem;
+		}
+
+		.provider-desc {
+			font-size: 0.8rem;
+			color: var(--color-text-muted);
+		}
+
+		.form-check-input {
+			width: 1.35rem;
+			height: 1.35rem;
+			margin-left: 0.6rem;
+			background-color: var(--color-section-bg);
+			border: 2px solid var(--color-divider);
+			border-radius: 0.25rem;
+			appearance: none;
+			cursor: pointer;
+		}
+
+		.form-check-input:checked {
+			background-color: var(--color-accent);
+			border-color: var(--color-accent);
+			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+			background-size: 100%;
+			background-position: center;
+			background-repeat: no-repeat;
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0.65rem 1.1rem;
+			font-size: 1rem;
+			font-weight: 600;
+			border-radius: 0.25rem;
+			border: none;
+			cursor: pointer;
+			transition: background-color 0.15s ease;
+		}
+
+		.btn-primary {
+			background-color: var(--color-accent);
+			color: #ffffff;
+		}
+
+		.btn-primary:hover {
+			background-color: var(--color-accent-dark);
+		}
+
+		.btn-secondary {
+			background-color: var(--color-section-header);
+			color: var(--color-text);
+		}
+
+		.save-container {
+			padding: 1rem 0 0.5rem;
+		}
+
+		.save-container .btn {
+			width: 100%;
+		}
+
+		.form-select {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			font-size: 1rem;
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			background: var(--color-section-bg);
+			color: var(--color-text);
+		}
+
+		.form-group {
+			margin-bottom: 0.6rem;
+		}
+
+		.form-label {
+			display: block;
+			font-size: 0.92rem;
+			font-weight: 600;
+			margin-bottom: 0.35rem;
+		}
+
+		.form-check-label {
+			font-size: 0.92rem;
+			font-weight: 500;
+		}
+
+		.form-switch {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6rem;
+			padding: 0.4rem 0;
+		}
+
+		.form-switch input[type="checkbox"] {
+			width: 3rem;
+			height: 1.6rem;
+			border-radius: 1rem;
+			background-color: var(--color-divider);
+			appearance: none;
+			position: relative;
+			cursor: pointer;
+		}
+
+		.form-switch input[type="checkbox"]::before {
+			content: "";
+			position: absolute;
+			top: 0.15rem;
+			left: 0.15rem;
+			width: 1.3rem;
+			height: 1.3rem;
+			background: #fff;
+			border-radius: 50%;
+			transition: transform 0.2s ease;
+			box-shadow: var(--shadow-button);
+		}
+
+		.form-switch input[type="checkbox"]:checked {
+			background-color: var(--color-accent);
+		}
+
+		.form-switch input[type="checkbox"]:checked::before {
+			transform: translateX(1.35rem);
+		}
+
+		.ui-sortable-helper {
+			box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+		}
+
+		.ui-sortable-placeholder {
+			visibility: visible !important;
+			background: var(--color-section-header);
+			border: 2px dashed var(--color-divider);
+		}
+
+		.form-input {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			font-size: 1rem;
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			background: var(--color-section-bg);
+			color: var(--color-text);
+		}
+
+		.template-help {
+			margin-top: 0.5rem;
+			padding: 0.6rem;
+			background: var(--color-section-header);
+			border-radius: 0.25rem;
+		}
+
+		.template-help-title {
+			font-size: 0.8rem;
+			font-weight: 600;
+			margin-bottom: 0.4rem;
+			color: var(--color-text-muted);
+		}
+
+		.template-vars {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.3rem;
+		}
+
+		.template-var {
+			display: inline-block;
+			padding: 0.2rem 0.45rem;
+			font-size: 0.75rem;
+			font-family: monospace;
+			background: var(--color-section-bg);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.2rem;
+			cursor: pointer;
+			color: var(--color-accent);
+			text-decoration: none;
+			transition: background-color 0.15s ease;
+		}
+
+		.template-var:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		.template-section {
+			border-bottom: 1px solid var(--color-divider);
+			padding-bottom: 0.4rem;
+			margin-bottom: 0.4rem;
+		}
+
+		.template-section:last-child {
+			border-bottom: none;
+			padding-bottom: 0;
+			margin-bottom: 0;
+		}
+
+		.template-section-title {
+			font-size: 0.7rem;
+			font-weight: 600;
+			color: var(--color-text-muted);
+			margin-bottom: 0.25rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		#custom-template-group {
+			display: none;
+			margin-top: 0.6rem;
+		}
+
+		#custom-template-group.visible {
+			display: block;
+		}
+
+		#forecast-subtitle-template-group {
+			display: none;
+			margin-top: 0.6rem;
+		}
+
+		#forecast-subtitle-template-group.visible {
+			display: block;
+		}
+
+		/* Provider config button */
+		.provider-config-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2rem;
+			height: 2rem;
+			margin-left: 0.5rem;
+			background: var(--color-section-header);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			font-size: 0.9rem;
+			flex-shrink: 0;
+		}
+
+		.provider-config-btn:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		/* Modal overlay */
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+			align-items: center;
+			justify-content: center;
+			padding: 1rem;
+		}
+
+		.modal-overlay.visible {
+			display: flex;
+		}
+
+		.modal-content {
+			background: var(--color-section-bg);
+			border-radius: 0.5rem;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+			max-width: 400px;
+			width: 100%;
+			max-height: 90vh;
+			overflow: auto;
+		}
+
+		.modal-header {
+			padding: 1rem;
+			border-bottom: 1px solid var(--color-divider);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.modal-header h2 {
+			margin: 0;
+			font-size: 1.1rem;
+		}
+
+		.modal-close {
+			background: none;
+			border: none;
+			font-size: 1.5rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			padding: 0;
+			line-height: 1;
+		}
+
+		.modal-close:hover {
+			color: var(--color-text);
+		}
+
+		.modal-body {
+			padding: 1rem;
+		}
+
+		.modal-footer {
+			padding: 1rem;
+			border-top: 1px solid var(--color-divider);
+			display: flex;
+			gap: 0.5rem;
+			justify-content: flex-end;
+		}
+
+		.api-key-input-group {
+			display: flex;
+			gap: 0.5rem;
+		}
+
+		.api-key-input-group input {
+			flex: 1;
+		}
+
+		.toggle-visibility-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2.5rem;
+			background: var(--color-section-header);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			flex-shrink: 0;
+		}
+
+		.toggle-visibility-btn:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		.form-check-input:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.api-key-hint {
+			font-size: 0.8rem;
+			color: var(--color-text-muted);
+			margin-top: 0.5rem;
+		}
+
+		.api-key-hint a {
+			color: var(--color-accent);
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<div class="page-header">
+		<h1>Multi Weather</h1>
+		<p>Made with <span class="heart">♥</span> by Skylar Sadlier</p>
+		<a href="https://ko-fi.com/B0B51BM7C" target="_blank"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy me a coffee"></a></a>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Weather Providers</div>
+		<div class="section-body">
+			<p class="form-text">Enabled providers appear in the app. Drag handles to set the main menu order.</p>
+			<ul id="providers-sortable" class="list-group"></ul>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Quick Glance</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="quick-glance">Main Menu Subtitle</label>
+				<select id="quick-glance" class="form-select">
+					<option value="temperature">Temperature</option>
+					<option value="humidity">Humidity</option>
+					<option value="wind">Wind Speed</option>
+					<option value="forecast">Forecast</option>
+					<option value="custom_template">Custom Template</option>
+				</select>
+				<p class="form-text">Choose what information displays below each provider name.</p>
+			</div>
+			<div id="custom-template-group">
+				<label class="form-label" for="custom-template">Template</label>
+				<input type="text" id="custom-template" class="form-input" placeholder="{temp} H:{temp_high} L:{temp_low}">
+				<div class="template-help">
+					<div class="template-help-title">Available Variables (click to insert)</div>
+					<div class="template-section">
+						<div class="template-section-title">Temperature</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{temp}">{temp}</a>
+							<a href="#" class="template-var" data-var="{temp_f}">{temp_f}</a>
+							<a href="#" class="template-var" data-var="{temp_c}">{temp_c}</a>
+							<a href="#" class="template-var" data-var="{temp_high}">{temp_high}</a>
+							<a href="#" class="template-var" data-var="{temp_low}">{temp_low}</a>
+							<a href="#" class="template-var" data-var="{temp_f_high}">{temp_f_high}</a>
+							<a href="#" class="template-var" data-var="{temp_f_low}">{temp_f_low}</a>
+							<a href="#" class="template-var" data-var="{temp_c_high}">{temp_c_high}</a>
+							<a href="#" class="template-var" data-var="{temp_c_low}">{temp_c_low}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Wind</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{windspeed}">{windspeed}</a>
+							<a href="#" class="template-var" data-var="{windspeed_mph}">{windspeed_mph}</a>
+							<a href="#" class="template-var" data-var="{windspeed_kph}">{windspeed_kph}</a>
+							<a href="#" class="template-var" data-var="{wind_direction}">{wind_direction}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Conditions</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{humidity}">{humidity}</a>
+							<a href="#" class="template-var" data-var="{conditions}">{conditions}</a>
+							<a href="#" class="template-var" data-var="{forecast}">{forecast}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Detailed Forecast</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="detailed-forecast-subtitle">Forecast List Subtitle</label>
+				<select id="detailed-forecast-subtitle" class="form-select">
+					<option value="short_forecast">Short Forecast</option>
+					<option value="long_forecast">Long Forecast</option>
+					<option value="short_forecast_temp">Short Forecast + High/Low</option>
+					<option value="high_low_temp">High/Low Temperature</option>
+					<option value="wind">Wind</option>
+					<option value="custom_template">Custom Template</option>
+				</select>
+				<p class="form-text">Choose what information displays below each forecast period. High/Low temp requires hourly data coverage for the period.</p>
+			</div>
+			<div id="forecast-subtitle-template-group">
+				<label class="form-label" for="forecast-subtitle-template">Template</label>
+				<input type="text" id="forecast-subtitle-template" class="form-input" placeholder="{temp} {temp_high} / {temp_low} {precip}">
+				<div class="template-help">
+					<div class="template-help-title">Available Variables (click to insert)</div>
+					<div class="template-section">
+						<div class="template-section-title">Temperature</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{temp}">{temp}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f}">{temp_f}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c}">{temp_c}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_high}">{temp_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_low}">{temp_low}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f_high}">{temp_f_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f_low}">{temp_f_low}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c_high}">{temp_c_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c_low}">{temp_c_low}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Wind</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{wind}">{wind}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed}">{windspeed}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed_mph}">{windspeed_mph}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed_kph}">{windspeed_kph}</a>
+							<a href="#" class="forecast-template-var" data-var="{wind_direction}">{wind_direction}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Forecast</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{short_forecast}">{short_forecast}</a>
+							<a href="#" class="forecast-template-var" data-var="{long_forecast}">{long_forecast}</a>
+							<a href="#" class="forecast-template-var" data-var="{precip}">{precip}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Units</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="time-format">Time Format</label>
+				<select id="time-format" class="form-select">
+					<option value="12h">12-hour (5PM)</option>
+					<option value="24h">24-hour (17:00)</option>
+				</select>
+			</div>
+			<div class="form-group" style="margin-bottom: 0;">
+				<label class="form-label" for="temp-unit">Temperature</label>
+				<select id="temp-unit" class="form-select">
+					<option value="F">Fahrenheit (°F)</option>
+					<option value="C">Celsius (°C)</option>
+				</select>
+			</div>
+			<div class="form-switch" style="padding-bottom:0">
+				<label class="form-check-label" for="temp-show-both">Show both temperature units</label>
+				<input type="checkbox" id="temp-show-both">
+			</div>
+			<p class="form-text" style="margin-top:0;">When enabled, displays both °F and °C values.</p>
+			<div class="form-group">
+				<label class="form-label" for="speed-unit">Wind Speed</label>
+				<select id="speed-unit" class="form-select">
+					<option value="mph">Miles per hour (mph)</option>
+					<option value="kmh">Kilometers per hour (km/h)</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Menu Appearance</div>
+		<div class="section-body">
+			<p class="form-text">Choose the menu background color. Sun Based switches between white (day) and black (night).</p>
+			<div class="form-group">
+				<label class="form-label" for="menu-background">Menu Background</label>
+				<select id="menu-background" class="form-select">
+					<option value="sun">Sun Based</option>
+					<option value="black">Black</option>
+					<option value="white">White</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="save-container">
+		<button type="button" class="btn btn-primary" id="save-btn">Save</button>
+	</div>
+</div>
+
+<!-- API Key Configuration Modal -->
+<div class="modal-overlay" id="api-key-modal">
+	<div class="modal-content">
+		<div class="modal-header">
+			<h2 id="modal-title">Configure API Key</h2>
+			<button type="button" class="modal-close" id="modal-close">&times;</button>
+		</div>
+		<div class="modal-body">
+			<div class="form-group">
+				<label class="form-label" for="api-key-input">API Key</label>
+				<div class="api-key-input-group">
+					<input type="password" id="api-key-input" class="form-input" placeholder="Enter your API key">
+					<button type="button" class="toggle-visibility-btn" id="toggle-api-key-visibility">
+						<i class="fa fa-eye"></i>
+					</button>
+				</div>
+				<p class="api-key-hint" id="api-key-hint">
+					Get your API key from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a>. Requires One Call API 3.0 subscription.
+				</p>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+			<button type="button" class="btn btn-primary" id="modal-save">Save</button>
+		</div>
+	</div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
+	<script type="text/javascript">
+		var PROVIDERS = [
+			{ id: 'nws', name: 'NWS', desc: 'National Weather Service (US only)' },
+			{ id: 'openmeteo', name: 'Open-Meteo', desc: 'Global forecast model' },
+			{ id: 'metno', name: 'Meteorologisk institutt', desc: 'MET Norway global forecast' },
+			{ id: 'openweather', name: 'OpenWeatherMap', desc: 'Requires API key (paid)', requiresApiKey: true, apiKeySettingName: 'openweather_api_key' },
+			{ id: 'weatherapi', name: 'WeatherAPI.com', desc: 'Requires API key (free tier available)', requiresApiKey: true, apiKeySettingName: 'weatherapi_api_key' }
+		];
+
+		// Store for API keys
+		var apiKeys = {};
+
+		var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
+		var DEFAULT_FORECAST_SUBTITLE_TEMPLATE = '{temp} {temp_high} / {temp_low} {precip}';
+
+	function decodeOptions() {
+		var hash = window.location.hash;
+		if (!hash || hash.length < 2) {
+			return {};
+		}
+		try {
+			return JSON.parse(decodeURIComponent(hash.substring(1)));
+		} catch (e) {
+			return {};
+		}
+	}
+
+	function buildProviderList(order, enabledMap) {
+		var list = document.getElementById('providers-sortable');
+		list.innerHTML = '';
+
+		for (var i = 0; i < order.length; i++) {
+			var provider = order[i];
+			var li = document.createElement('li');
+			li.className = 'list-group-item';
+			li.setAttribute('data-id', provider.id);
+
+			var handle = document.createElement('i');
+			handle.className = 'fa fa-bars';
+			li.appendChild(handle);
+
+			var info = document.createElement('div');
+			info.className = 'provider-info';
+
+			var name = document.createElement('div');
+			name.className = 'provider-name';
+			name.textContent = provider.name;
+
+			var desc = document.createElement('div');
+			desc.className = 'provider-desc';
+			desc.textContent = provider.desc || '';
+
+			info.appendChild(name);
+			info.appendChild(desc);
+			li.appendChild(info);
+
+			// Add config button for providers that require API key
+			if (provider.requiresApiKey) {
+				var configBtn = document.createElement('button');
+				configBtn.type = 'button';
+				configBtn.className = 'provider-config-btn';
+				configBtn.setAttribute('data-provider', provider.id);
+				configBtn.innerHTML = '<i class="fa fa-cog"></i>';
+				configBtn.addEventListener('click', function(e) {
+					e.stopPropagation();
+					var providerId = this.getAttribute('data-provider');
+					openApiKeyModal(providerId);
+				});
+				li.appendChild(configBtn);
+			}
+
+			var checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.className = 'form-check-input';
+			checkbox.setAttribute('data-provider', provider.id);
+
+			// For providers requiring API key, disable checkbox if no key is set
+			// Also default to disabled (unchecked) if no API key
+			if (provider.requiresApiKey) {
+				var hasApiKey = apiKeys[provider.apiKeySettingName] && apiKeys[provider.apiKeySettingName].length > 0;
+				checkbox.disabled = !hasApiKey;
+				if (!hasApiKey) {
+					checkbox.checked = false;
+				} else {
+					checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : false;
+				}
+			} else {
+				checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : true;
+			}
+
+			li.appendChild(checkbox);
+
+			list.appendChild(li);
+		}
+	}
+
+	function initSortable() {
+		$('#providers-sortable').sortable({
+			handle: '.fa-bars',
+			placeholder: 'list-group-item ui-sortable-placeholder',
+			cancel: 'input, button, .provider-config-btn',
+			tolerance: 'pointer',
+			axis: 'y',
+			cursor: 'grabbing'
+		});
+	}
+
+	function getSortedProviders() {
+		var ordered = [];
+		var enabled = {};
+		$('#providers-sortable li').each(function() {
+			var id = $(this).data('id');
+			var isEnabled = $(this).find('input[type="checkbox"]').is(':checked');
+			ordered.push(id);
+			enabled[id] = isEnabled;
+		});
+		return { order: ordered, enabled: enabled };
+	}
+
+	function onSave() {
+		var result = getSortedProviders();
+		var payload = {
+			provider_order: result.order,
+			provider_enabled: result.enabled,
+			quick_glance: document.getElementById('quick-glance').value,
+			custom_template: document.getElementById('custom-template').value || DEFAULT_CUSTOM_TEMPLATE,
+			temperature_unit: document.getElementById('temp-unit').value,
+			speed_unit: document.getElementById('speed-unit').value,
+			time_format: document.getElementById('time-format').value,
+			temperature_show_both: document.getElementById('temp-show-both').checked,
+			menu_background_mode: document.getElementById('menu-background').value,
+			detailed_forecast_subtitle: document.getElementById('detailed-forecast-subtitle').value,
+			detailed_forecast_subtitle_template: document.getElementById('forecast-subtitle-template').value || DEFAULT_FORECAST_SUBTITLE_TEMPLATE
+		};
+
+		// Add API keys to payload
+		for (var key in apiKeys) {
+			if (apiKeys.hasOwnProperty(key)) {
+				payload[key] = apiKeys[key];
+			}
+		}
+
+		var returnTo = 'pebblejs://close#' + encodeURIComponent(JSON.stringify(payload));
+		window.location.href = returnTo;
+	}
+
+	// Current provider being configured
+	var currentConfigProvider = null;
+
+	function openApiKeyModal(providerId) {
+		var provider = null;
+		for (var i = 0; i < PROVIDERS.length; i++) {
+			if (PROVIDERS[i].id === providerId) {
+				provider = PROVIDERS[i];
+				break;
+			}
+		}
+		if (!provider) return;
+
+		currentConfigProvider = provider;
+
+		// Set modal title
+		document.getElementById('modal-title').textContent = 'Configure ' + provider.name;
+
+		// Set current API key value
+		var apiKeyInput = document.getElementById('api-key-input');
+		apiKeyInput.value = apiKeys[provider.apiKeySettingName] || '';
+		apiKeyInput.type = 'password';
+
+		// Reset visibility button
+		var visBtn = document.getElementById('toggle-api-key-visibility');
+		visBtn.innerHTML = '<i class="fa fa-eye"></i>';
+
+		// Set appropriate API key hint based on provider
+		var hintEl = document.getElementById('api-key-hint');
+		if (providerId === 'openweather') {
+			hintEl.innerHTML = 'Get your API key from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a>. Requires One Call API 3.0 subscription.';
+		} else if (providerId === 'weatherapi') {
+			hintEl.innerHTML = 'Get your free API key from <a href="https://www.weatherapi.com/signup.aspx" target="_blank">WeatherAPI.com</a>. Free tier: 1M calls/month.';
+		} else {
+			hintEl.innerHTML = 'Enter your API key for ' + provider.name + '.';
+		}
+
+		// Show modal
+		document.getElementById('api-key-modal').classList.add('visible');
+	}
+
+	function closeApiKeyModal() {
+		document.getElementById('api-key-modal').classList.remove('visible');
+		currentConfigProvider = null;
+	}
+
+	function toggleApiKeyVisibility() {
+		var input = document.getElementById('api-key-input');
+		var btn = document.getElementById('toggle-api-key-visibility');
+		if (input.type === 'password') {
+			input.type = 'text';
+			btn.innerHTML = '<i class="fa fa-eye-slash"></i>';
+		} else {
+			input.type = 'password';
+			btn.innerHTML = '<i class="fa fa-eye"></i>';
+		}
+	}
+
+	function saveApiKey() {
+		if (!currentConfigProvider) return;
+
+		var apiKey = document.getElementById('api-key-input').value.trim();
+		apiKeys[currentConfigProvider.apiKeySettingName] = apiKey;
+
+		// Update checkbox state
+		var checkbox = document.querySelector('input[data-provider="' + currentConfigProvider.id + '"]');
+		if (checkbox) {
+			var hasApiKey = apiKey.length > 0;
+			checkbox.disabled = !hasApiKey;
+			if (!hasApiKey) {
+				checkbox.checked = false;
+			}
+		}
+
+		closeApiKeyModal();
+	}
+
+	function initModalHandlers() {
+		document.getElementById('modal-close').addEventListener('click', closeApiKeyModal);
+		document.getElementById('modal-cancel').addEventListener('click', closeApiKeyModal);
+		document.getElementById('modal-save').addEventListener('click', saveApiKey);
+		document.getElementById('toggle-api-key-visibility').addEventListener('click', toggleApiKeyVisibility);
+
+		// Close on overlay click
+		document.getElementById('api-key-modal').addEventListener('click', function(e) {
+			if (e.target === this) {
+				closeApiKeyModal();
+			}
+		});
+	}
+
+	function toggleCustomTemplate() {
+		var quickGlance = document.getElementById('quick-glance').value;
+		var customGroup = document.getElementById('custom-template-group');
+		if (quickGlance === 'custom_template') {
+			customGroup.classList.add('visible');
+		} else {
+			customGroup.classList.remove('visible');
+		}
+	}
+
+	function toggleForecastSubtitleTemplate() {
+		var subtitleMode = document.getElementById('detailed-forecast-subtitle').value;
+		var templateGroup = document.getElementById('forecast-subtitle-template-group');
+		if (subtitleMode === 'custom_template') {
+			templateGroup.classList.add('visible');
+		} else {
+			templateGroup.classList.remove('visible');
+		}
+	}
+
+	function initTemplateVars() {
+		var vars = document.querySelectorAll('.template-var');
+		var input = document.getElementById('custom-template');
+		for (var i = 0; i < vars.length; i++) {
+			vars[i].addEventListener('click', function(e) {
+				e.preventDefault();
+				var varText = this.getAttribute('data-var');
+				var cursorPos = input.selectionStart;
+				var textBefore = input.value.substring(0, cursorPos);
+				var textAfter = input.value.substring(cursorPos);
+				input.value = textBefore + varText + textAfter;
+				input.focus();
+				input.selectionStart = input.selectionEnd = cursorPos + varText.length;
+			});
+		}
+	}
+
+	function initForecastTemplateVars() {
+		var vars = document.querySelectorAll('.forecast-template-var');
+		var input = document.getElementById('forecast-subtitle-template');
+		for (var i = 0; i < vars.length; i++) {
+			vars[i].addEventListener('click', function(e) {
+				e.preventDefault();
+				var varText = this.getAttribute('data-var');
+				var cursorPos = input.selectionStart;
+				var textBefore = input.value.substring(0, cursorPos);
+				var textAfter = input.value.substring(cursorPos);
+				input.value = textBefore + varText + textAfter;
+				input.focus();
+				input.selectionStart = input.selectionEnd = cursorPos + varText.length;
+			});
+		}
+	}
+
+	(function init() {
+		var options = decodeOptions();
+		var order = Array.isArray(options.provider_order) ? options.provider_order.slice() : [];
+		var enabledMap = options.provider_enabled && typeof options.provider_enabled === 'object'
+			? options.provider_enabled
+			: {};
+		var tempUnit = options.temperature_unit || 'F';
+		var speedUnit = options.speed_unit || 'mph';
+		var timeFormat = options.time_format || '12h';
+		var quickGlance = options.quick_glance || 'temperature';
+		var customTemplate = options.custom_template || DEFAULT_CUSTOM_TEMPLATE;
+		var menuBackgroundMode = options.menu_background_mode || 'sun';
+		var detailedForecastSubtitle = options.detailed_forecast_subtitle || 'short_forecast';
+		var forecastSubtitleTemplate = options.detailed_forecast_subtitle_template || DEFAULT_FORECAST_SUBTITLE_TEMPLATE;
+		var tempShowBoth = options.temperature_show_both;
+		if (tempShowBoth === undefined || tempShowBoth === null) {
+			tempShowBoth = true;
+		}
+
+		// Load API keys from options
+		for (var p = 0; p < PROVIDERS.length; p++) {
+			if (PROVIDERS[p].requiresApiKey && PROVIDERS[p].apiKeySettingName) {
+				apiKeys[PROVIDERS[p].apiKeySettingName] = options[PROVIDERS[p].apiKeySettingName] || '';
+			}
+		}
+
+		if (!order.length) {
+			order = PROVIDERS.map(function(provider) { return provider.id; });
+		}
+
+		var orderedProviders = [];
+		for (var i = 0; i < order.length; i++) {
+			var providerId = order[i];
+			for (var k = 0; k < PROVIDERS.length; k++) {
+				if (PROVIDERS[k].id === providerId) {
+					orderedProviders.push(PROVIDERS[k]);
+					break;
+				}
+			}
+		}
+
+		for (var j = 0; j < PROVIDERS.length; j++) {
+			var exists = false;
+			for (var m = 0; m < order.length; m++) {
+				if (order[m] === PROVIDERS[j].id) {
+					exists = true;
+					break;
+				}
+			}
+			if (!exists) {
+				orderedProviders.push(PROVIDERS[j]);
+			}
+		}
+
+		buildProviderList(orderedProviders, enabledMap);
+		initSortable();
+
+		document.getElementById('quick-glance').value = quickGlance;
+		document.getElementById('custom-template').value = customTemplate;
+		document.getElementById('temp-unit').value = tempUnit;
+		document.getElementById('speed-unit').value = speedUnit;
+		document.getElementById('time-format').value = timeFormat;
+		document.getElementById('temp-show-both').checked = !!tempShowBoth;
+		document.getElementById('menu-background').value = menuBackgroundMode;
+		document.getElementById('detailed-forecast-subtitle').value = detailedForecastSubtitle;
+		document.getElementById('forecast-subtitle-template').value = forecastSubtitleTemplate;
+
+		// Set up custom template toggle
+		document.getElementById('quick-glance').addEventListener('change', toggleCustomTemplate);
+		toggleCustomTemplate();
+		initTemplateVars();
+
+		// Set up forecast subtitle template toggle
+		document.getElementById('detailed-forecast-subtitle').addEventListener('change', toggleForecastSubtitleTemplate);
+		toggleForecastSubtitleTemplate();
+		initForecastTemplateVars();
+
+		// Initialize modal handlers
+		initModalHandlers();
+
+		document.getElementById('save-btn').addEventListener('click', onSave);
+	})();
+</script>
+</body>
+</html>

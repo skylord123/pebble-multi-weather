@@ -89,31 +89,20 @@ var PrecipitationGraphPage = {
     _buildXLabels: function(periods) {
         var labels = [];
         var labelIndexes = [0, 6, 12, 18];
+        var lastIndex = periods.length - 1;
+        if (lastIndex > 0 && labelIndexes.indexOf(lastIndex) === -1) {
+            labelIndexes.push(lastIndex);
+        }
         for (var i = 0; i < labelIndexes.length; i++) {
             var idx = labelIndexes[i];
             if (periods[idx]) {
                 labels.push({
                     index: idx,
-                    text: this._formatHour(periods[idx].startTime)
+                    text: helpers.formatHourForGraph(periods[idx].startTime)
                 });
             }
         }
         return labels;
-    },
-
-    _formatHour: function(timestamp) {
-        if (!timestamp) {
-            return '--';
-        }
-        var date = new Date(timestamp);
-        if (isNaN(date.getTime())) {
-            return '--';
-        }
-        var hours = date.getHours();
-        var suffix = hours >= 12 ? 'p' : 'a';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        return hours + suffix;
     },
 
     _clampPercent: function(value) {

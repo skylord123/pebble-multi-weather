@@ -60,16 +60,20 @@ var ForecastPeriodPage = {
     _buildItems: function(period) {
         var items = [];
 
-        // Start Time
+        // Time Period (combined start and end time)
+        var startStr = helpers.formatDateTimeCompact(period.startTime);
+        var endStr = helpers.formatDateTimeCompact(period.endTime);
+        var timePeriodStr = startStr + ' - ' + endStr;
+        if (startStr === '--' && endStr === '--') {
+            timePeriodStr = '--';
+        } else if (startStr === '--') {
+            timePeriodStr = 'Until ' + endStr;
+        } else if (endStr === '--') {
+            timePeriodStr = 'From ' + startStr;
+        }
         items.push({
-            title: 'Start Time',
-            subtitle: helpers.formatDateTime(period.startTime)
-        });
-
-        // End Time
-        items.push({
-            title: 'End Time',
-            subtitle: helpers.formatDateTime(period.endTime)
+            title: 'Time Period',
+            subtitle: timePeriodStr
         });
 
         // Temperature
@@ -115,12 +119,15 @@ var ForecastPeriodPage = {
             subtitle: period.shortForecast || '--'
         });
 
-        // Detailed Forecast (clickable)
-        items.push({
-            title: 'Detailed Forecast',
-            subtitle: 'Tap to view...',
-            id: 'detailed'
-        });
+        // Detailed Forecast (clickable) - only show if there's a detailed forecast
+        // that's different from the short forecast
+        if (period.detailedForecast && period.detailedForecast !== period.shortForecast) {
+            items.push({
+                title: 'Detailed Forecast',
+                subtitle: 'Tap to view...',
+                id: 'detailed'
+            });
+        }
 
         return items;
     }

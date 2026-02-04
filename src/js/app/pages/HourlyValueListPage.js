@@ -127,7 +127,7 @@ var HourlyValueListPage = {
             this._add(new UI.Text({
                 position: new Vector2(0, y),
                 size: new Vector2(timeWidth, lineHeight),
-                text: this._formatHourLabel(period.startTime),
+                text: helpers.formatHourLabel(period.startTime),
                 font: 'gothic-14-bold',
                 color: 'white',
                 textAlign: 'right'
@@ -159,29 +159,6 @@ var HourlyValueListPage = {
         this._elements = [];
     },
 
-    _formatHourLabel: function(timestamp) {
-        if (!timestamp) {
-            return '--';
-        }
-        var date = new Date(timestamp);
-        if (isNaN(date.getTime())) {
-            return '--';
-        }
-        var hours = date.getHours();
-        var suffix = hours >= 12 ? 'p' : 'a';
-        hours = hours % 12;
-        hours = hours ? hours : 12;
-        var hourText = hours + suffix;
-        if (!this._isToday(date)) {
-            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            var month = months[date.getMonth()];
-            var day = date.getDate();
-            return month + ' ' + day + ' ' + hourText;
-        }
-        return hourText;
-    },
-
     _getRoundInset: function(size) {
         if (!Feature.round || !Feature.round()) {
             return 0;
@@ -189,13 +166,6 @@ var HourlyValueListPage = {
         var diameter = Math.min(size.x, size.y);
         var inset = (diameter - (diameter / Math.SQRT2)) / 2;
         return Math.ceil(inset);
-    },
-
-    _isToday: function(date) {
-        var now = new Date();
-        return date.getFullYear() === now.getFullYear() &&
-            date.getMonth() === now.getMonth() &&
-            date.getDate() === now.getDate();
     },
 
     _showNoData: function() {
