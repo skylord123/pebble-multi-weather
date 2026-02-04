@@ -20,6 +20,20 @@ var WeatherManager = require('app/services/WeatherManager');
 
 // === Page Imports ===
 var MainMenuPage = require('app/pages/MainMenuPage');
+var NWSMenuPage = require('app/pages/NWSMenuPage');
+var OpenMeteoMenuPage = require('app/pages/OpenMeteoMenuPage');
+var MetNoMenuPage = require('app/pages/MetNoMenuPage');
+var OpenWeatherMenuPage = require('app/pages/OpenWeatherMenuPage');
+var WeatherAPIMenuPage = require('app/pages/WeatherAPIMenuPage');
+
+// === Provider Menu Page Map ===
+var providerMenuPages = {
+    nws: NWSMenuPage,
+    openmeteo: OpenMeteoMenuPage,
+    metno: MetNoMenuPage,
+    openweather: OpenWeatherMenuPage,
+    weatherapi: WeatherAPIMenuPage
+};
 
 // === Initialize AppState ===
 var appState = AppState.getInstance();
@@ -101,6 +115,9 @@ function refreshWeather() {
         function(providerId, success) {
             log('Provider updated: ' + providerId + ' (success: ' + success + ')');
             MainMenuPage.updateProvider(providerId);
+            if (providerMenuPages[providerId]) {
+                providerMenuPages[providerId].updateMenu();
+            }
         }
     );
 }
