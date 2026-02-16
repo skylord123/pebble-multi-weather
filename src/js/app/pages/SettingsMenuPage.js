@@ -99,7 +99,7 @@ var SettingsMenuPage = {
                 ? Constants.units.FAHRENHEIT
                 : Constants.units.CELSIUS;
             Settings.option('temperature_unit', appState.temperatureUnit);
-            this._updateItem(0, 3, {
+            this._updateItem(0, 4, {
                 title: 'Temp Unit',
                 subtitle: this._formatUnit(appState.temperatureUnit),
                 id: 'temp_unit'
@@ -113,7 +113,7 @@ var SettingsMenuPage = {
                 ? Constants.speedUnits.MPH
                 : Constants.speedUnits.KMH;
             Settings.option('speed_unit', appState.speedUnit);
-            this._updateItem(0, 4, {
+            this._updateItem(0, 5, {
                 title: 'Speed Unit',
                 subtitle: this._formatSpeedUnit(appState.speedUnit),
                 id: 'speed_unit'
@@ -127,7 +127,7 @@ var SettingsMenuPage = {
                 ? Constants.timeFormats.HOUR_12
                 : Constants.timeFormats.HOUR_24;
             Settings.option('time_format', appState.timeFormat);
-            this._updateItem(0, 5, {
+            this._updateItem(0, 3, {
                 title: 'Time Format',
                 subtitle: this._formatTimeFormat(appState.timeFormat),
                 id: 'time_format'
