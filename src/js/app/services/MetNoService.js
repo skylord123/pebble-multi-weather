@@ -121,7 +121,6 @@ class MetNoService extends WeatherService {
             var details = entry.data && entry.data.instant ? entry.data.instant.details : {};
             var symbolCode = this._getSymbolCode(entry);
             var precipAmount = this._getPrecipitation(entry);
-            var precipProb = this._precipitationToPercent(precipAmount);
 
             periods.push({
                 number: i + 1,
@@ -133,8 +132,8 @@ class MetNoService extends WeatherService {
                 temperatureUnit: null,
                 temperatureTrend: null,
                 probabilityOfPrecipitation: {
-                    unitCode: 'wmoUnit:percent',
-                    value: precipProb
+                    unitCode: 'mm',
+                    value: precipAmount !== null ? Math.round(precipAmount * 10) / 10 : null
                 },
                 dewpoint: {
                     unitCode: null,
@@ -241,7 +240,6 @@ class MetNoService extends WeatherService {
             var minF = this._cToF(day.minTempC);
             var symbol = day.symbolCode;
             var text = this._symbolCodeToText(symbol);
-            var precipProb = this._precipitationToPercent(day.maxPrecipitation);
 
             var period = {
                 number: j + 1,
@@ -253,8 +251,8 @@ class MetNoService extends WeatherService {
                 temperatureUnit: null,
                 temperatureTrend: null,
                 probabilityOfPrecipitation: {
-                    unitCode: 'wmoUnit:percent',
-                    value: precipProb
+                    unitCode: 'mm',
+                    value: day.maxPrecipitation !== null ? Math.round(day.maxPrecipitation * 10) / 10 : null
                 },
                 windSpeed: day.windSpeed,
                 windGust: day.windGust,
@@ -409,16 +407,6 @@ class MetNoService extends WeatherService {
             return null;
         }
         return Math.round(value);
-    }
-
-    _precipitationToPercent(precipAmount) {
-        if (precipAmount === null || precipAmount === undefined || isNaN(precipAmount)) {
-            return null;
-        }
-        if (precipAmount <= 0) {
-            return 0;
-        }
-        return Math.min(Math.round(precipAmount * 20), 100);
     }
 
     _formatPrecipitation(precipAmount) {
