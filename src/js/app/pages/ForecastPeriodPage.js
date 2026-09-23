@@ -88,15 +88,18 @@ var ForecastPeriodPage = {
             subtitle: tempStr
         });
 
-        // Precipitation Probability
-        var precipProb = '--';
+        // Precipitation (Chance or Amount)
+        var precipStr = '--';
+        var precipLabel = 'Precipitation';
         if (period.probabilityOfPrecipitation &&
             period.probabilityOfPrecipitation.value !== null) {
-            precipProb = period.probabilityOfPrecipitation.value + '%';
+            var unit = (period.probabilityOfPrecipitation.unitCode === 'mm') ? ' mm' : '%';
+            precipStr = period.probabilityOfPrecipitation.value + unit;
+            precipLabel = 'Precipitation (' + (unit.trim() || '%') + ')';
         }
         items.push({
-            title: 'Precip Chance',
-            subtitle: precipProb
+            title: precipLabel,
+            subtitle: precipStr
         });
 
         // Wind
