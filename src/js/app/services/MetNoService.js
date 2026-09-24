@@ -121,6 +121,9 @@ class MetNoService extends WeatherService {
             var details = entry.data && entry.data.instant ? entry.data.instant.details : {};
             var symbolCode = this._getSymbolCode(entry);
             var precipAmount = this._getPrecipitation(entry);
+            var tempF = this._cToF(details.air_temperature);
+            var windMph = this._mpsToMph(details.wind_speed);
+            var humidity = this._roundValue(details.relative_humidity);
 
             periods.push({
                 number: i + 1,
@@ -128,7 +131,7 @@ class MetNoService extends WeatherService {
                 startTime: time,
                 endTime: nextTime,
                 isDaytime: null,
-                temperature: this._cToF(details.air_temperature),
+                temperature: tempF,
                 temperatureUnit: null,
                 temperatureTrend: null,
                 probabilityOfPrecipitation: {
@@ -141,9 +144,9 @@ class MetNoService extends WeatherService {
                 },
                 relativeHumidity: {
                     unitCode: 'wmoUnit:percent',
-                    value: this._roundValue(details.relative_humidity)
+                    value: humidity
                 },
-                windSpeed: this._mpsToMph(details.wind_speed),
+                windSpeed: windMph,
                 windGust: this._mpsToMph(details.wind_speed_of_gust),
                 windDirection: this._degreesToCompass(details.wind_from_direction),
                 visibility: this._convertVisibility(details.visibility),
@@ -151,7 +154,7 @@ class MetNoService extends WeatherService {
                 icon: null,
                 symbolCode: symbolCode,
                 shortForecast: this._symbolCodeToText(symbolCode),
-                detailedForecast: this._buildDetailedForecast(entry, precipAmount)
+                detailedForecast: this._buildDetailedForecast(symbolCode, tempF, windMph, this._degreesToCompass(details.wind_from_direction), humidity, precipAmount, details.visibility)
             });
         }
 
@@ -241,6 +244,24 @@ class MetNoService extends WeatherService {
             var symbol = day.symbolCode;
             var text = this._symbolCodeToText(symbol);
 
+            // Build detailed forecast for the day
+            var dailyDetails = [];
+            dailyDetails.push(text);
+            if (maxF !== null && minF !== null) {
+                dailyDetails.push('High ' + Math.round(maxF) + '°F, Low ' + Math.round(minF) + '°F');
+            }
+            if (day.windSpeed !== null) {
+                var windText = (day.windDirection || '') + ' ' + Math.round(day.windSpeed) + ' mph';
+                dailyDetails.push('Wind ' + windText.trim());
+            }
+            if (day.maxPrecipitation !== null && day.maxPrecipitation > 0) {
+                dailyDetails.push(Math.round(day.maxPrecipitation * 10) / 10 + ' mm rain');
+            }
+            if (day.maxCloudCoverage !== null) {
+                dailyDetails.push(Math.round(day.maxCloudCoverage) + '% cloud');
+            }
+            var detailedText = dailyDetails.join(', ');
+
             var period = {
                 number: j + 1,
                 name: this._formatDayName(day.date ? day.date.getTime() : null, j),
@@ -262,7 +283,7 @@ class MetNoService extends WeatherService {
                 icon: null,
                 symbolCode: symbol,
                 shortForecast: text,
-                detailedForecast: text + (day.maxPrecipitation !== null ? ' - ' + this._formatPrecipitation(day.maxPrecipitation) : '')
+                detailedForecast: detailedText
             };
 
             days.push({
@@ -419,11 +440,42 @@ class MetNoService extends WeatherService {
         return Math.round(precipAmount * 10) / 10 + ' mm rain';
     }
 
-    _buildDetailedForecast(entry, precipAmount) {
-        var symbolCode = this._getSymbolCode(entry);
-        var text = this._symbolCodeToText(symbolCode);
-        var precipText = this._formatPrecipitation(precipAmount);
-        return precipText ? text + ' - ' + precipText : text;
+    _buildDetailedForecast(symbolCode, tempF, windMph, windDir, humidity, precipAmount, visibilityMeters) {
+        var parts = [];
+
+        // Condition
+        var conditionText = this._symbolCodeToText(symbolCode);
+        parts.push(conditionText);
+
+        // Temperature
+        if (tempF !== null && tempF !== undefined) {
+            parts.push(Math.round(tempF) + '°F');
+        }
+
+        // Wind
+        if (windMph !== null && windMph !== undefined && windMph > 0) {
+            var windText = (windDir || '') + ' ' + Math.round(windMph) + ' mph';
+            windText = windText.trim();
+            parts.push(windText);
+        }
+
+        // Precipitation
+        if (precipAmount !== null && precipAmount !== undefined && precipAmount > 0) {
+            parts.push(Math.round(precipAmount * 10) / 10 + ' mm');
+        }
+
+        // Humidity
+        if (humidity !== null && humidity !== undefined && humidity > 0) {
+            parts.push(humidity + '% humidity');
+        }
+
+        // Visibility if significantly reduced
+        if (visibilityMeters !== null && visibilityMeters !== undefined && visibilityMeters < 5000) {
+            var vis = Math.round(visibilityMeters / 100) / 10;
+            parts.push('visibility ' + vis + ' km');
+        }
+
+        return parts.join(', ');
     }
 
     _convertVisibility(meters) {
