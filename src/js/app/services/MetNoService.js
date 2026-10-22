@@ -201,6 +201,22 @@ class MetNoService extends WeatherService {
                 day.minTempC = (day.minTempC === null) ? tempC : Math.min(day.minTempC, tempC);
                 day.maxTempC = (day.maxTempC === null) ? tempC : Math.max(day.maxTempC, tempC);
             }
+            // Beyond the first couple of days the steps are six hours apart, so
+            // the instant readings miss the day's peak and its coldest hour.
+            // Each step also gives the range over its six hours, which counts
+            // when those hours are all in this day.
+            var sixHours = entry.data && entry.data.next_6_hours && entry.data.next_6_hours.details;
+            var dayEnd = day.date.getTime() + 24 * 60 * 60 * 1000;
+            if (sixHours && time + 6 * 60 * 60 * 1000 <= dayEnd) {
+                var rangeMax = sixHours.air_temperature_max;
+                var rangeMin = sixHours.air_temperature_min;
+                if (rangeMax !== null && rangeMax !== undefined && !isNaN(rangeMax)) {
+                    day.maxTempC = (day.maxTempC === null) ? rangeMax : Math.max(day.maxTempC, rangeMax);
+                }
+                if (rangeMin !== null && rangeMin !== undefined && !isNaN(rangeMin)) {
+                    day.minTempC = (day.minTempC === null) ? rangeMin : Math.min(day.minTempC, rangeMin);
+                }
+            }
 
             var precipAmount = this._getPrecipitation(entry);
             if (precipAmount !== null && precipAmount !== undefined && !isNaN(precipAmount)) {
