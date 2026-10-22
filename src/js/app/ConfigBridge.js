@@ -118,16 +118,16 @@ var ConfigBridge = {
 
     handlers: {
         /**
-         * Everything the page needs to draw itself: the whole options object
-         * (the same shape the hosted page reads from its hash) plus how each
-         * provider is doing.
+         * Everything the page needs to draw itself: the options (the same
+         * ones the hosted page reads from its hash) plus how each provider is
+         * doing.
          */
         get_settings: function(message, respond) {
             respond({
                 ok: true,
                 app_version: Constants.appVersion,
                 conf_version: Constants.CONFIG_PAGE_VERSION.replace(/^v|\.html$/g, ''),
-                settings: Settings.option(),
+                settings: require('app/SettingsManager').pageOptions(),
                 status: ConfigBridge.status()
             });
         },

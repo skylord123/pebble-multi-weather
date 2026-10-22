@@ -177,6 +177,25 @@ var SettingsManager = {
     },
 
     /**
+     * The options the settings page works with: everything but the app's
+     * own bookkeeping. The cached weather in particular is large, and the
+     * hosted page gets the options in its URL, which a phone app may cut short.
+     * @returns {Object}
+     */
+    pageOptions: function() {
+        var options = Settings.option() || {};
+        var result = {};
+        for (var key in options) {
+            if (options.hasOwnProperty(key) &&
+                key.indexOf(Constants.cachePrefix) !== 0 &&
+                key !== 'cached_latitude' && key !== 'cached_longitude') {
+                result[key] = options[key];
+            }
+        }
+        return result;
+    },
+
+    /**
      * Initialize the settings config page handler
      * @param {Object} options - Configuration options
      * @param {Function} options.onSettingsChanged - Callback when settings change
@@ -185,11 +204,16 @@ var SettingsManager = {
         var self = this;
         var log = helpers.log;
 
+        // The page's URL is built here rather than by Settings, which would
+        // put every option in it
         Settings.config({
-            url: options.configPageUrl || ''
+            url: options.configPageUrl || '',
+            hash: false
         },
         function(e) {
             log('Settings page opened');
+            return (options.configPageUrl || '') + '#' +
+                encodeURIComponent(JSON.stringify(self.pageOptions()));
         },
         function(e) {
             log('Settings page closed');
