@@ -205,9 +205,7 @@ var DetailedForecastPage = {
             '{short_forecast}': period.shortForecast || '--',
             '{long_forecast}': period.detailedForecast || period.shortForecast || '--',
             // Precipitation
-            '{precip}': period.precipitationChance !== null && period.precipitationChance !== undefined
-                ? period.precipitationChance + '%'
-                : '--'
+            '{precip}': this._formatPrecipitation(period)
         };
 
         var result = template;
@@ -291,6 +289,23 @@ var DetailedForecastPage = {
             return null;
         }
         return { high: Math.round(high), low: Math.round(low) };
+    },
+
+    /**
+     * The chance of precipitation as a percentage, or for MET Norway the
+     * amount in millimetres
+     * @private
+     */
+    _formatPrecipitation: function(period) {
+        var precipitation = period.probabilityOfPrecipitation;
+        if (!precipitation || precipitation.value === null || precipitation.value === undefined ||
+            isNaN(precipitation.value)) {
+            return '--';
+        }
+        if (precipitation.unitCode === 'mm') {
+            return (Math.round(precipitation.value * 10) / 10) + ' mm';
+        }
+        return Math.round(precipitation.value) + '%';
     },
 
     /**
