@@ -682,6 +682,11 @@
 				</select>
 				<p class="form-text">Choose what information displays below each provider name.</p>
 			</div>
+			<div class="form-switch" style="padding-bottom:0">
+				<label class="form-check-label" for="main-menu-forecast">Forecast line</label>
+				<input type="checkbox" id="main-menu-forecast" checked>
+			</div>
+			<p class="form-text" style="margin-top:0;">Shows the forecast as a third line under each provider on the main menu. Not shown when Quick Glance is already the forecast.</p>
 			<div id="custom-template-group">
 				<label class="form-label" for="custom-template">Template</label>
 				<input type="text" id="custom-template" class="form-input" placeholder="{temp} H:{temp_high} L:{temp_low}">
@@ -1428,6 +1433,7 @@
 		$('speed-unit').value = options.speed_unit || 'mph';
 		$('time-format').value = options.time_format || '12h';
 		$('temp-show-both').checked = !!tempShowBoth;
+		$('main-menu-forecast').checked = options.main_menu_forecast !== false;
 		$('menu-background').value = options.menu_background_mode || 'sun';
 		$('touch-enabled').checked = options.touch_enabled !== false;
 		$('touch-long-press').checked = options.touch_long_press !== false;
@@ -1450,6 +1456,7 @@
 			speed_unit: $('speed-unit').value,
 			time_format: $('time-format').value,
 			temperature_show_both: $('temp-show-both').checked,
+			main_menu_forecast: $('main-menu-forecast').checked,
 			menu_background_mode: $('menu-background').value,
 			touch_enabled: $('touch-enabled').checked,
 			touch_long_press: $('touch-long-press').checked,

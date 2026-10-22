@@ -34,6 +34,7 @@ var SettingsMenuPage = {
                 subtitle: this._formatQuickGlance(appState.quickGlance),
                 id: 'quick_glance'
             },
+            this._forecastLineItem(),
             {
                 title: 'Forecast Subtitle',
                 subtitle: this._formatForecastSubtitle(appState.detailedForecastSubtitle),
@@ -105,7 +106,7 @@ var SettingsMenuPage = {
                 ? Constants.units.FAHRENHEIT
                 : Constants.units.CELSIUS;
             Settings.option('temperature_unit', appState.temperatureUnit);
-            this._updateItem(0, 4, {
+            this._updateItem(0, e.itemIndex, {
                 title: 'Temp Unit',
                 subtitle: this._formatUnit(appState.temperatureUnit),
                 id: 'temp_unit'
@@ -119,7 +120,7 @@ var SettingsMenuPage = {
                 ? Constants.speedUnits.MPH
                 : Constants.speedUnits.KMH;
             Settings.option('speed_unit', appState.speedUnit);
-            this._updateItem(0, 5, {
+            this._updateItem(0, e.itemIndex, {
                 title: 'Speed Unit',
                 subtitle: this._formatSpeedUnit(appState.speedUnit),
                 id: 'speed_unit'
@@ -133,7 +134,7 @@ var SettingsMenuPage = {
                 ? Constants.timeFormats.HOUR_12
                 : Constants.timeFormats.HOUR_24;
             Settings.option('time_format', appState.timeFormat);
-            this._updateItem(0, 3, {
+            this._updateItem(0, e.itemIndex, {
                 title: 'Time Format',
                 subtitle: this._formatTimeFormat(appState.timeFormat),
                 id: 'time_format'
@@ -154,7 +155,7 @@ var SettingsMenuPage = {
         if (itemId === 'temp_both') {
             appState.temperatureShowBoth = !appState.temperatureShowBoth;
             Settings.option('temperature_show_both', appState.temperatureShowBoth);
-            this._updateItem(0, 6, {
+            this._updateItem(0, e.itemIndex, {
                 title: 'Show both temperature units',
                 subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
                 id: 'temp_both'
@@ -166,7 +167,7 @@ var SettingsMenuPage = {
         if (itemId === 'menu_background') {
             appState.menuBackgroundMode = this._nextMenuBackgroundMode(appState.menuBackgroundMode);
             Settings.option('menu_background_mode', appState.menuBackgroundMode);
-            this._updateItem(0, 7, {
+            this._updateItem(0, e.itemIndex, {
                 title: 'Menu Background',
                 subtitle: this._formatMenuBackground(appState.menuBackgroundMode),
                 id: 'menu_background'
@@ -176,9 +177,29 @@ var SettingsMenuPage = {
             return;
         }
 
+        if (itemId === 'forecast_line') {
+            appState.mainMenuForecast = !appState.mainMenuForecast;
+            Settings.option('main_menu_forecast', appState.mainMenuForecast);
+            this._updateItem(0, e.itemIndex, this._forecastLineItem());
+            this._refreshMainMenu();
+            return;
+        }
+
         if (itemId === 'touch') {
             this._showTouchSettings(e.itemIndex);
         }
+    },
+
+    /**
+     * The forecast under each provider on the main menu
+     */
+    _forecastLineItem: function() {
+        var appState = AppState.getInstance();
+        return {
+            title: 'Forecast Line',
+            subtitle: appState.mainMenuForecast ? 'Shown on main menu' : 'Hidden',
+            id: 'forecast_line'
+        };
     },
 
     _touchItem: function() {
@@ -275,7 +296,7 @@ var SettingsMenuPage = {
 
     updateQuickGlanceItem: function() {
         var appState = AppState.getInstance();
-        this._updateItem(0, 1, {
+        this._updateItem(0, this._indexOf('quick_glance'), {
             title: 'Quick Glance',
             subtitle: this._formatQuickGlance(appState.quickGlance),
             id: 'quick_glance'
@@ -284,7 +305,7 @@ var SettingsMenuPage = {
 
     updateForecastSubtitleItem: function() {
         var appState = AppState.getInstance();
-        this._updateItem(0, 2, {
+        this._updateItem(0, this._indexOf('forecast_subtitle'), {
             title: 'Forecast Subtitle',
             subtitle: this._formatForecastSubtitle(appState.detailedForecastSubtitle),
             id: 'forecast_subtitle'
@@ -308,10 +329,24 @@ var SettingsMenuPage = {
     },
 
     _updateItem: function(sectionIndex, itemIndex, item) {
-        if (!this.menu) {
+        if (!this.menu || itemIndex === -1) {
             return;
         }
         this.menu.item(sectionIndex, itemIndex, item);
+    },
+
+    /**
+     * Where a row is, found by its id rather than assumed, since which rows
+     * there are depends on the watch
+     */
+    _indexOf: function(id) {
+        var items = this.menu ? this.menu.items(0) || [] : [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].id === id) {
+                return i;
+            }
+        }
+        return -1;
     },
 
     _refreshMainMenu: function() {

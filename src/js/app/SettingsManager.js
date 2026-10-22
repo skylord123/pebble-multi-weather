@@ -51,6 +51,11 @@ var SettingsManager = {
         appState.customTemplate = Settings.option('custom_template') || Constants.defaultCustomTemplate;
         log('Custom template: ' + appState.customTemplate);
 
+        // The forecast as a third line under each provider on the main menu
+        // (on unless switched off)
+        appState.mainMenuForecast = Settings.option('main_menu_forecast') !== false;
+        log('Main menu forecast: ' + appState.mainMenuForecast);
+
         // Detailed forecast subtitle preference
         appState.detailedForecastSubtitle = Settings.option('detailed_forecast_subtitle') || Constants.detailedForecastSubtitle.SHORT_FORECAST;
         log('Detailed forecast subtitle: ' + appState.detailedForecastSubtitle);

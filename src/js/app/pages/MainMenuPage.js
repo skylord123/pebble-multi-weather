@@ -83,6 +83,7 @@ var MainMenuPage = {
                 items.push({
                     title: service.getName(),
                     subtitle: WeatherManager.getProviderSummary(providerId),
+                    subtext: this._forecastLine(providerId),
                     providerId: providerId,
                     icon: IconMapper.getIconForProvider(providerId, data)
                 });
@@ -143,9 +144,30 @@ var MainMenuPage = {
         this.menu.item(0, itemIndex, {
             title: WeatherManager.getService(providerId).getName(),
             subtitle: subtitle,
+            subtext: this._forecastLine(providerId),
             providerId: providerId,
             icon: IconMapper.getIconForProvider(providerId, appState.getWeatherData(providerId))
         });
+    },
+
+    /**
+     * The forecast for a provider's third line, or undefined for none: when
+     * it is switched off, when Quick Glance already shows the forecast, or
+     * before the provider has any weather. The last forecast stays up while a
+     * refresh is fetching, so rows do not change height with every refresh.
+     * @private
+     */
+    _forecastLine: function(providerId) {
+        var appState = AppState.getInstance();
+        if (!appState.mainMenuForecast || appState.quickGlance === Constants.quickGlance.FORECAST) {
+            return undefined;
+        }
+        var data = appState.getWeatherData(providerId);
+        if (!data) {
+            return undefined;
+        }
+        var period = data.forecastPeriods && data.forecastPeriods[0];
+        return (period && period.shortForecast) || data.conditions || undefined;
     },
 
     /**
