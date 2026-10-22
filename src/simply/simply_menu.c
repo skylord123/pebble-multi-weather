@@ -514,11 +514,15 @@ static void scroll_timer_callback_round(void *data) {
     if (!self->title_scrolling_active) {
       self->title_scrolling_active = true;
       self->title_scroll_offset = SCROLL_STEP_PX;
-    } else {
+    } else if (self->title_scroll_offset < self->title_max_scroll_offset) {
+      // Stops at its end, even while the other line is still scrolling
       self->title_scroll_offset += SCROLL_STEP_PX;
-      if (self->title_scroll_offset >= self->title_max_scroll_offset) {
-        title_finished = true;
+      if (self->title_scroll_offset > self->title_max_scroll_offset) {
+        self->title_scroll_offset = self->title_max_scroll_offset;
       }
+    }
+    if (self->title_scroll_offset >= self->title_max_scroll_offset) {
+      title_finished = true;
     }
   }
 
@@ -527,11 +531,15 @@ static void scroll_timer_callback_round(void *data) {
     if (!self->subtitle_scrolling_active) {
       self->subtitle_scrolling_active = true;
       self->subtitle_scroll_offset = SCROLL_STEP_PX;
-    } else {
+    } else if (self->subtitle_scroll_offset < self->subtitle_max_scroll_offset) {
+      // Stops at its end, even while the other line is still scrolling
       self->subtitle_scroll_offset += SCROLL_STEP_PX;
-      if (self->subtitle_scroll_offset >= self->subtitle_max_scroll_offset) {
-        subtitle_finished = true;
+      if (self->subtitle_scroll_offset > self->subtitle_max_scroll_offset) {
+        self->subtitle_scroll_offset = self->subtitle_max_scroll_offset;
       }
+    }
+    if (self->subtitle_scroll_offset >= self->subtitle_max_scroll_offset) {
+      subtitle_finished = true;
     }
   }
 
