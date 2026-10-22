@@ -38,7 +38,9 @@ class OpenMeteoService extends WeatherService {
             'weather_code',
             'wind_speed_10m',
             'wind_direction_10m',
-            'surface_pressure',
+            // Sea level, as every other provider reports it; the pressure at
+            // the surface reads low by about an inch of mercury per 1000 ft
+            'pressure_msl',
             'is_day'
         ];
 
@@ -129,7 +131,7 @@ class OpenMeteoService extends WeatherService {
                 humidity: self._roundValue(self._pickValue(current.relative_humidity_2m, hourly.relative_humidity_2m, currentHourIndex)),
                 windSpeed: self._pickValue(current.wind_speed_10m, hourly.wind_speed_10m, currentHourIndex),
                 windDirection: self._degreesToCompass(self._pickValue(current.wind_direction_10m, hourly.wind_direction_10m, currentHourIndex)),
-                barometer: self._pressureToPascals(self._pickValue(current.surface_pressure, hourly.pressure_msl, currentHourIndex)),
+                barometer: self._pressureToPascals(self._pickValue(current.pressure_msl, hourly.pressure_msl, currentHourIndex)),
                 dewpoint: self._pickValue(null, hourly.dew_point_2m, currentHourIndex),
                 visibility: self._pickValue(null, hourly.visibility, currentHourIndex),
                 observationTime: self._parseTime(current.time || (hourly.time && hourly.time[currentHourIndex])),
