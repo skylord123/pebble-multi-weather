@@ -262,7 +262,7 @@ class WeatherAPIService extends WeatherService {
                     temperatureTrend: null,
                     probabilityOfPrecipitation: {
                         unitCode: 'wmoUnit:percent',
-                        value: hour.chance_of_rain || 0
+                        value: Math.max(hour.chance_of_rain || 0, hour.chance_of_snow || 0)
                     },
                     dewpoint: {
                         unitCode: null,
@@ -314,7 +314,7 @@ class WeatherAPIService extends WeatherService {
                 temperatureTrend: null,
                 probabilityOfPrecipitation: {
                     unitCode: 'wmoUnit:percent',
-                    value: dayData ? dayData.daily_chance_of_rain : 0
+                    value: dayData ? Math.max(dayData.daily_chance_of_rain || 0, dayData.daily_chance_of_snow || 0) : 0
                 },
                 windSpeed: dayData ? Math.round(dayData.maxwind_mph) + ' mph' : null,
                 windDirection: null,
