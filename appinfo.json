@@ -29,7 +29,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -44,7 +45,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -59,7 +61,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -74,7 +77,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -89,7 +93,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -104,7 +109,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -119,7 +125,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -134,7 +141,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -149,7 +157,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -164,7 +173,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -184,7 +194,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -199,7 +210,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -214,7 +226,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -229,7 +242,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -244,7 +258,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -259,7 +274,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -274,7 +290,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -289,7 +306,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -304,7 +322,8 @@
         "targetPlatforms": [
           "basalt",
           "chalk",
-          "emery"
+          "emery",
+          "gabbro"
         ],
         "type": "bitmap"
       },
@@ -326,7 +345,8 @@
     "basalt",
     "chalk",
     "diorite",
-    "emery"
+    "emery",
+    "gabbro"
   ],
   "uuid": "dd83829b-aa4e-40f4-8e31-39167521e4d0",
   "versionCode": 1,
