@@ -664,6 +664,7 @@
 		<div class="section-body">
 			<p class="form-text">Enabled providers appear in the app. Drag handles to set the main menu order.</p>
 			<p class="form-text bridge-only">Test asks a provider for the weather where your watch is, so you can see it works there before saving.</p>
+			<p class="form-text" id="plugin-note" hidden>Other watchfaces and apps can show this weather too, from the providers switched on here and in this order: Multi Weather is a weather plugin in the Pebble app.</p>
 			<ul id="providers-sortable" class="list-group"></ul>
 		</div>
 	</div>
@@ -1330,6 +1331,7 @@
 			}
 			useApiKey(provider, apiKey, true);
 			setRowStatus(provider.id, 'ok', 'The key works and is saved on the watch');
+			refreshPlugin();
 			closeApiKeyModal();
 		});
 	}
@@ -1488,6 +1490,7 @@
 				display_alert('danger', '<strong>Not saved.</strong> ' + esc(reply.error.message));
 			} else {
 				display_alert('success', '<strong>Saved.</strong> The watch is refreshing the weather with your settings.');
+				refreshPlugin();
 			}
 			alertContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 		});
@@ -1551,6 +1554,22 @@
 		});
 	}
 
+	// ===== Plugin ===========================================================
+	//
+	// Phone apps with plugins switched on also start the plugin this pbw
+	// carries while the page is open, and say so with a `ready` for it. Once
+	// settings are saved, it is told to refresh, so watchfaces showing its
+	// weather pick them up now rather than at their next poll.
+
+	var pluginReady = false;
+
+	function refreshPlugin() {
+		if (!pluginReady) { return; }
+		bridge.sendMessage('plugin', { type: 'refresh' }).then(function() {}, function(err) {
+			console.log('Plugin refresh failed', err);
+		});
+	}
+
 	function startOverBridge() {
 		document.documentElement.classList.add('has-bridge');
 		saveBtn.disabled = true;
@@ -1564,6 +1583,11 @@
 
 		var started = false;
 		bridge.addEventListener('ready', function(e) {
+			if (e.target === 'plugin') {
+				pluginReady = true;
+				$('plugin-note').hidden = false;
+				return;
+			}
 			if (e.target !== 'pkjs' || started) { return; }
 			started = true;
 			loadFromWatch();
