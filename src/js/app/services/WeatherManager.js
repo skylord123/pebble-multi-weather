@@ -126,7 +126,8 @@ var WeatherManager = {
         // again before then, even for a forced refresh: MET Norway's terms
         // require it, and it would only answer with the same forecast
         var held = CacheManager.get(providerId);
-        if (held && held.data && held.data.expiresAt && Date.now() < held.data.expiresAt) {
+        if (held && held.data && held.data.expiresAt && Date.now() < held.data.expiresAt &&
+            CacheManager.isForPlace(held, appState.latitude, appState.longitude)) {
             appState.setWeatherData(providerId, held.data);
             log('WeatherManager: ' + providerId + ' not updated before ' + new Date(held.data.expiresAt));
             if (onSuccess) onSuccess(held.data);
@@ -135,7 +136,7 @@ var WeatherManager = {
 
         // Check cache first (unless forcing refresh)
         if (!forceRefresh) {
-            var cachedData = CacheManager.getIfValid(providerId);
+            var cachedData = CacheManager.getIfValid(providerId, appState.latitude, appState.longitude);
             if (cachedData) {
                 appState.setWeatherData(providerId, cachedData);
                 log('WeatherManager: ' + providerId + ' loaded from cache');
@@ -179,9 +180,14 @@ var WeatherManager = {
             }
         }, PROVIDER_TIMEOUT_MS);
 
+        // Where this fetch is for, which the location may have moved on from
+        // by the time it answers
+        var latitude = appState.latitude;
+        var longitude = appState.longitude;
+
         service.fetchWeather(
-            appState.latitude,
-            appState.longitude,
+            latitude,
+            longitude,
             function(data) {
                 if (!claim()) {
                     log('WeatherManager: ignoring an older answer from ' + providerId);
@@ -189,7 +195,7 @@ var WeatherManager = {
                 }
                 appState.setWeatherData(providerId, data);
                 appState.setProviderError(providerId, null); // Clear any previous error
-                CacheManager.save(providerId, data);
+                CacheManager.save(providerId, data, latitude, longitude);
                 log('WeatherManager: ' + providerId + ' data received and cached');
                 if (onSuccess) {
                     onSuccess(data);

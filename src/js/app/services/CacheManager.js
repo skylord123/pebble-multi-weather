@@ -6,6 +6,9 @@ var Settings = require('settings');
 var Constants = require('app/Constants');
 var helpers = require('app/helpers');
 
+// About 2km: close enough for the same forecast
+var SAME_PLACE_DEGREES = 0.02;
+
 var CacheManager = {
     /**
      * Get cached weather data for a provider
@@ -37,15 +40,39 @@ var CacheManager = {
     },
 
     /**
+     * Whether a cache entry is for the given place. Entries saved before the
+     * place was recorded count as being for anywhere.
+     * @param {Object} cached - Entry from get()
+     * @param {number} latitude
+     * @param {number} longitude
+     * @returns {boolean}
+     */
+    isForPlace: function(cached, latitude, longitude) {
+        if (!cached || typeof cached.latitude !== 'number' || typeof cached.longitude !== 'number' ||
+            typeof latitude !== 'number' || typeof longitude !== 'number') {
+            return true;
+        }
+        return Math.abs(cached.latitude - latitude) <= SAME_PLACE_DEGREES &&
+            Math.abs(cached.longitude - longitude) <= SAME_PLACE_DEGREES;
+    },
+
+    /**
      * Check if cached data is still valid (not expired)
      * @param {string} providerId - Provider identifier
+     * @param {number} latitude - Where the weather is wanted, if known
+     * @param {number} longitude
      * @returns {boolean} True if cache is valid
      */
-    isValid: function(providerId) {
+    isValid: function(providerId, latitude, longitude) {
         var log = helpers.log;
         var cached = this.get(providerId);
 
         if (!cached || !cached.timestamp) {
+            return false;
+        }
+
+        if (!this.isForPlace(cached, latitude, longitude)) {
+            log('CacheManager: ' + providerId + ' cache is for somewhere else');
             return false;
         }
 
@@ -69,8 +96,8 @@ var CacheManager = {
      * @param {string} providerId - Provider identifier
      * @returns {Object|null} Weather data or null
      */
-    getIfValid: function(providerId) {
-        if (this.isValid(providerId)) {
+    getIfValid: function(providerId, latitude, longitude) {
+        if (this.isValid(providerId, latitude, longitude)) {
             var cached = this.get(providerId);
             return cached ? cached.data : null;
         }
@@ -82,7 +109,7 @@ var CacheManager = {
      * @param {string} providerId - Provider identifier
      * @param {Object} data - Weather data to cache
      */
-    save: function(providerId, data) {
+    save: function(providerId, data, latitude, longitude) {
         var log = helpers.log;
         var cacheKey = Constants.cachePrefix + providerId;
 
@@ -90,6 +117,10 @@ var CacheManager = {
             timestamp: Date.now(),
             data: data
         };
+        if (typeof latitude === 'number' && typeof longitude === 'number') {
+            cacheEntry.latitude = latitude;
+            cacheEntry.longitude = longitude;
+        }
 
         Settings.option(cacheKey, JSON.stringify(cacheEntry));
         log('CacheManager: Saved cache for ' + providerId);
