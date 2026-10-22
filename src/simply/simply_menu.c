@@ -641,6 +641,10 @@ static void stop_scroll_timer(SimplyMenu *self) {
   self->max_scroll_offset = 0;
   self->scrolling_active = false;
   self->needs_scrolling = false;
+#ifdef SIMPLY_HAS_TOUCH
+  // A row a drag left in the middle of a menu means nothing to the next one
+  self->scroll_index_pinned = false;
+#endif
 
 #if defined(PBL_ROUND)
   self->title_scroll_offset = 0;
