@@ -101,6 +101,16 @@ var MainMenuPage = {
     },
 
     /**
+     * Rebuild every row, for when the providers shown or their order change
+     */
+    rebuild: function() {
+        if (!this.menu) {
+            return;
+        }
+        this.menu.items(0, this._buildMenuSections()[0].items);
+    },
+
+    /**
      * Update a specific provider's menu item
      * @param {string} providerId - Provider to update
      */
@@ -108,18 +118,22 @@ var MainMenuPage = {
         var log = helpers.log;
         var appState = AppState.getInstance();
 
-        if (!this.menu) {
+        if (!this.menu || providerId === 'settings') {
             return;
         }
 
-        var providerOrder = WeatherManager.getProviderOrder();
-        var itemIndex = providerOrder.indexOf(providerId);
+        // Found by provider rather than by position in the provider order,
+        // so a row is never written over another one while the order changes
+        var itemIndex = -1;
+        var items = this.menu.items(0) || [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].providerId === providerId) {
+                itemIndex = i;
+                break;
+            }
+        }
 
         if (itemIndex === -1) {
-            return;
-        }
-
-        if (providerId === 'settings') {
             return;
         }
 

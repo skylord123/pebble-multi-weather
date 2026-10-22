@@ -52,6 +52,8 @@ WeatherManager.init();
 function onSettingsChanged() {
     helpers.log('Settings changed, refreshing weather');
     SettingsManager.load();
+    // The providers shown, or their order, may have changed
+    MainMenuPage.rebuild();
     MainMenuPage.refreshTheme();
     fetchLocationAndWeather();
 }
