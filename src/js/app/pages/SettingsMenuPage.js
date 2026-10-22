@@ -155,7 +155,7 @@ var SettingsMenuPage = {
             appState.temperatureShowBoth = !appState.temperatureShowBoth;
             Settings.option('temperature_show_both', appState.temperatureShowBoth);
             this._updateItem(0, 6, {
-                title: 'Show Both Units',
+                title: 'Show both temperature units',
                 subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
                 id: 'temp_both'
             });
