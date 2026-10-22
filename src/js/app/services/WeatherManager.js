@@ -229,7 +229,7 @@ var WeatherManager = {
         var service = this.getService(providerId);
 
         if (!appState.hasLocation()) {
-            return 'Getting location...';
+            return appState.locationFailed ? 'Location unavailable' : 'Getting location...';
         }
 
         if (status === 'unavailable') {

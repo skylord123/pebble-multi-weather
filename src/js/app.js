@@ -102,6 +102,7 @@ function fetchLocationAndWeather() {
 
             appState.latitude = position.coords.latitude;
             appState.longitude = position.coords.longitude;
+            appState.locationFailed = false;
 
             // Cache location for future app launches (for sun-based theme)
             SettingsManager.saveLocation(position.coords.latitude, position.coords.longitude);
@@ -113,9 +114,15 @@ function fetchLocationAndWeather() {
         },
         function(error) {
             log('GPS error: ' + error.message);
-            // Update menu to show error
-            MainMenuPage.updateAll();
             ConfigBridge.notifyStatus();
+            // The weather for the last place the phone found itself beats
+            // none: SettingsManager.load already restored it
+            if (appState.hasLocation()) {
+                refreshWeather();
+                return;
+            }
+            appState.locationFailed = true;
+            MainMenuPage.updateAll();
         },
         locationOptions
     );
