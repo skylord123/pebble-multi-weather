@@ -158,6 +158,8 @@ function snapshot(providerId, data, place, fetchedAt) {
         latitude: place.latitude,
         longitude: place.longitude,
         fetchedAt: fetchedAt,
+        // MET Norway's terms: not to be asked again before this
+        notBefore: number(data.expiresAt),
         observedAt: timeOf(data.observationTime),
         place: NAMES_PLACE[providerId] && data.location ? String(data.location) : null,
         temp: temp,
@@ -299,7 +301,7 @@ var Forecasts = {
      */
     get: function(providerId, place) {
         var known = newestKnown(providerId, place);
-        if (known && Date.now() - known.fetchedAt < maxAgeMs(providerId)) {
+        if (known && (Date.now() - known.fetchedAt < maxAgeMs(providerId) || Date.now() < known.notBefore)) {
             return Promise.resolve({ view: known, stale: false });
         }
 
@@ -318,7 +320,7 @@ var Forecasts = {
 
     /** When a view should be fetched again */
     expiresAt: function(view, stale) {
-        var expiry = view.fetchedAt + maxAgeMs(view.provider);
+        var expiry = Math.max(view.fetchedAt + maxAgeMs(view.provider), view.notBefore || 0);
         // Stale means a fetch just failed: worth trying again soon, not at once
         var soonest = Date.now() + (stale ? 5 * 60 * 1000 : 60 * 1000);
         return Math.max(expiry, soonest);

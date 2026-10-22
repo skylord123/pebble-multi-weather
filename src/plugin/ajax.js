@@ -54,8 +54,8 @@ function encodeForm(data) {
 
 /**
  * @param {Object|string} opt - The URL, or { url, method, type, data, headers }
- * @param {Function} success - Called with (body, status, response) for a 2xx or 304
- * @param {Function} failure - Called with (body, status, response) otherwise; status 0 when the request never got an answer
+ * @param {Function} success - Called with (body, status, req) for a 2xx or 304
+ * @param {Function} failure - Called with (body, status, req) otherwise; status 0 when the request never got an answer
  */
 var ajax = function(opt, success, failure) {
     if (typeof opt === 'string') {
@@ -93,6 +93,13 @@ var ajax = function(opt, success, failure) {
     }
 
     request.then(function(response) {
+        // What the services read from XMLHttpRequest
+        var req = {
+            status: response.status,
+            getResponseHeader: function(name) {
+                return response.headers && response.headers.get ? response.headers.get(name) : null;
+            }
+        };
         return response.text().then(function(text) {
             var okay = response.ok || response.status === 304;
             var body = text;
@@ -103,7 +110,7 @@ var ajax = function(opt, success, failure) {
                     okay = false;
                 }
             }
-            call(okay ? success : failure, body, response.status, response);
+            call(okay ? success : failure, body, response.status, req);
         });
     }).catch(function() {
         // Blocked by the user's network permission, or no answer at all. The
