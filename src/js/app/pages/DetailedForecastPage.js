@@ -137,7 +137,7 @@ var DetailedForecastPage = {
                 return '';
 
             case Constants.detailedForecastSubtitle.WIND:
-                return this._formatWind(period);
+                return this._formatWind(period, appState);
 
             case Constants.detailedForecastSubtitle.CUSTOM_TEMPLATE:
                 return this._processSubtitleTemplate(period, hourlyForecast, appState, options);
@@ -187,7 +187,7 @@ var DetailedForecastPage = {
             '{temp_c_high}': highC !== null ? Math.round(highC) + 'C' : '--',
             '{temp_c_low}': lowC !== null ? Math.round(lowC) + 'C' : '--',
             // Wind - full formatted string (direction + speed)
-            '{wind}': this._formatWind(period) || '--',
+            '{wind}': this._formatWind(period, appState) || '--',
             // Wind speed based on selected unit
             '{windspeed}': (function() {
                 if (windMph === null) return '--';
@@ -339,13 +339,20 @@ var DetailedForecastPage = {
      * Format wind information for display
      * @private
      */
-    _formatWind: function(period) {
+    _formatWind: function(period, appState) {
         var parts = [];
         if (period.windDirection) {
             parts.push(period.windDirection);
         }
-        if (period.windSpeed) {
-            parts.push(period.windSpeed);
+        // Providers give the speed as mph, either a number or text such as
+        // "5 mph" or "5 to 10 mph", so it is put in the user's unit here
+        var speedMph = helpers.parseWindSpeed(period.windSpeed);
+        if (speedMph !== null && !isNaN(speedMph)) {
+            if (appState && appState.speedUnit === Constants.speedUnits.KMH) {
+                parts.push(Math.round(helpers.mphToKmh(speedMph)) + ' km/h');
+            } else {
+                parts.push(Math.round(speedMph) + ' mph');
+            }
         }
         return parts.join(' ') || '';
     },
