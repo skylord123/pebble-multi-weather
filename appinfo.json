@@ -6,6 +6,120 @@
   "companyName": "skylar.tech",
   "configPage": "config.html",
   "longName": "Multi Weather",
+  "manifestVersion": 2,
+  "plugin": {
+    "description": "Weather from the providers switched on in Multi Weather: NWS, Open-Meteo, MET Norway, OpenWeatherMap and WeatherAPI.com. One location instance per provider, in the order of the app's main menu, named after the provider, and the hours ahead from the first provider with an hourly forecast. Uses the API keys and units picked in Multi Weather's settings.",
+    "script": "plugin.js",
+    "sources": [
+      {
+        "callerPermissions": [
+          "Location"
+        ],
+        "category": "weather",
+        "items": [
+          "location"
+        ],
+        "properties": {
+          "condition": [
+            "shortText",
+            "longText",
+            "icon",
+            "image"
+          ],
+          "condition_code": [
+            "longText"
+          ],
+          "feels_like": [
+            "shortText",
+            "longText",
+            "numericValue"
+          ],
+          "high": [
+            "shortText",
+            "longText",
+            "numericValue"
+          ],
+          "humidity": [
+            "numericValue",
+            "shortText"
+          ],
+          "low": [
+            "shortText",
+            "longText",
+            "numericValue"
+          ],
+          "name": [
+            "shortText"
+          ],
+          "place": [
+            "shortText",
+            "longText"
+          ],
+          "precipitation": [
+            "numericValue",
+            "shortText"
+          ],
+          "provider": [
+            "shortText",
+            "longText"
+          ],
+          "temperature": [
+            "shortText",
+            "longText",
+            "numericValue"
+          ],
+          "updated": [
+            "timestamp"
+          ],
+          "wind": [
+            "shortText",
+            "longText",
+            "numericValue"
+          ]
+        },
+        "suggestedRefreshIntervalSec": 900,
+        "supportsMultiple": true
+      },
+      {
+        "callerPermissions": [
+          "Location"
+        ],
+        "category": "weather",
+        "items": [
+          "hour"
+        ],
+        "properties": {
+          "condition": [
+            "shortText",
+            "longText",
+            "icon",
+            "image"
+          ],
+          "condition_code": [
+            "longText"
+          ],
+          "precipitation": [
+            "numericValue",
+            "shortText"
+          ],
+          "provider": [
+            "shortText",
+            "longText"
+          ],
+          "temperature": [
+            "numericValue",
+            "shortText"
+          ],
+          "time": [
+            "timestamp",
+            "shortText"
+          ]
+        },
+        "suggestedRefreshIntervalSec": 900,
+        "supportsMultiple": true
+      }
+    ]
+  },
   "resources": {
     "media": [
       {
@@ -348,6 +462,21 @@
     "diorite",
     "emery",
     "gabbro"
+  ],
+  "usesPermissions": [
+    "Location",
+    {
+      "name": "Internet",
+      "parameters": {
+        "domains": [
+          "api.weather.gov",
+          "api.open-meteo.com",
+          "api.met.no",
+          "api.openweathermap.org",
+          "api.weatherapi.com"
+        ]
+      }
+    }
   ],
   "uuid": "dd83829b-aa4e-40f4-8e31-39167521e4d0",
   "versionCode": 1,

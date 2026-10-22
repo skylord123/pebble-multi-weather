@@ -21,6 +21,7 @@
 var Settings = require('settings');
 var AppState = require('app/AppState');
 var Constants = require('app/Constants');
+var ProviderSettings = require('app/ProviderSettings');
 var helpers = require('app/helpers');
 
 // Where a key is checked when the watch has no location yet. Only the key is
@@ -32,10 +33,7 @@ var KEY_TEST_LOCATION = { latitude: 51.5074, longitude: -0.1278 };
 var TEST_TIMEOUT_MS = 20000;
 
 // The setting each keyed provider keeps its API key in
-var API_KEY_SETTINGS = {
-    openweather: 'openweather_api_key',
-    weatherapi: 'weatherapi_api_key'
-};
+var API_KEY_SETTINGS = ProviderSettings.apiKeySettings;
 
 var ConfigBridge = {
     // Set by init(): runs after a save so the app applies the new settings
