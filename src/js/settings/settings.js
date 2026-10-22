@@ -110,11 +110,11 @@ var makeDataAccessor = function(type, path) {
     if (arguments.length === 1 && typeof field !== 'object') {
       return data[field];
     }
-    if (typeof field !== 'object' && value === undefined || value === null) {
+    if (typeof field !== 'object' && (value === undefined || value === null)) {
       delete data[field];
+    } else {
+      util2.copy(myutil.toObject(field, value), data);
     }
-    var def = myutil.toObject(field, value);
-    util2.copy(def, data);
     Settings._saveData(path, type);
   };
 };
