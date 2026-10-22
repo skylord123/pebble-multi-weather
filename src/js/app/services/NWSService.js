@@ -226,8 +226,15 @@ class NWSService extends WeatherService {
             var completed = { observation: false, forecast: false, hourly: false };
             var hasError = false;
 
+            // The three requests answer in any order, so the current icon is
+            // picked once they all have: what the station last saw, which
+            // matches the conditions text, then this hour's forecast, then
+            // today's
+            var iconUrls = { observation: null, hourly: null, forecast: null };
+
             function checkComplete() {
                 if (completed.observation && completed.forecast && completed.hourly && !hasError) {
+                    weatherData.currentIconUrl = iconUrls.observation || iconUrls.hourly || iconUrls.forecast || null;
                     log('NWS: Weather data complete');
                     onSuccess(weatherData);
                 }
@@ -242,6 +249,9 @@ class NWSService extends WeatherService {
                 }
                 if (obs.textDescription) {
                     weatherData.conditions = obs.textDescription;
+                }
+                if (obs.icon) {
+                    iconUrls.observation = obs.icon;
                 }
                 if (obs.relativeHumidity && obs.relativeHumidity.value !== null) {
                     weatherData.humidity = Math.round(obs.relativeHumidity.value);
@@ -291,7 +301,7 @@ class NWSService extends WeatherService {
                 // Store all forecast periods for detailed forecast view
                 weatherData.forecastPeriods = periods;
                 if (periods.length > 0 && periods[0].icon) {
-                    weatherData.currentIconUrl = periods[0].icon;
+                    iconUrls.forecast = periods[0].icon;
                 }
 
                 // If we don't have current conditions from observation,
@@ -315,7 +325,7 @@ class NWSService extends WeatherService {
                 self._getHourlyForecast(hourlyUrl, function(hourlyData) {
                     weatherData.hourlyForecast = hourlyData;
                     if (hourlyData && hourlyData.periods && hourlyData.periods.length > 0 && hourlyData.periods[0].icon) {
-                        weatherData.currentIconUrl = hourlyData.periods[0].icon;
+                        iconUrls.hourly = hourlyData.periods[0].icon;
                     }
                     completed.hourly = true;
                     checkComplete();
