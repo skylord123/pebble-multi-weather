@@ -52,6 +52,8 @@ WeatherManager.init();
 function onSettingsChanged() {
     helpers.log('Settings changed, refreshing weather');
     SettingsManager.load();
+    // The providers shown, or their order, may have changed
+    MainMenuPage.rebuild();
     MainMenuPage.refreshTheme();
     fetchLocationAndWeather();
 }
@@ -82,8 +84,9 @@ ConfigBridge.init({
 
 /**
  * Get current location via GPS and fetch weather
+ * @param {boolean} forceRefresh - Fetch even where the cache is still valid
  */
-function fetchLocationAndWeather() {
+function fetchLocationAndWeather(forceRefresh) {
     var log = helpers.log;
 
     log('Getting GPS location...');
@@ -100,6 +103,7 @@ function fetchLocationAndWeather() {
 
             appState.latitude = position.coords.latitude;
             appState.longitude = position.coords.longitude;
+            appState.locationFailed = false;
 
             // Cache location for future app launches (for sun-based theme)
             SettingsManager.saveLocation(position.coords.latitude, position.coords.longitude);
@@ -107,13 +111,19 @@ function fetchLocationAndWeather() {
             MainMenuPage.refreshTheme();
             // An open config page can now test providers that need a location
             ConfigBridge.notifyStatus();
-            refreshWeather();
+            refreshWeather(forceRefresh);
         },
         function(error) {
             log('GPS error: ' + error.message);
-            // Update menu to show error
-            MainMenuPage.updateAll();
             ConfigBridge.notifyStatus();
+            // The weather for the last place the phone found itself beats
+            // none: SettingsManager.load already restored it
+            if (appState.hasLocation()) {
+                refreshWeather(forceRefresh);
+                return;
+            }
+            appState.locationFailed = true;
+            MainMenuPage.updateAll();
         },
         locationOptions
     );
@@ -121,8 +131,9 @@ function fetchLocationAndWeather() {
 
 /**
  * Refresh weather data from all providers
+ * @param {boolean} forceRefresh - Fetch even where the cache is still valid
  */
-function refreshWeather() {
+function refreshWeather(forceRefresh) {
     var log = helpers.log;
 
     if (!appState.hasLocation()) {
@@ -141,7 +152,8 @@ function refreshWeather() {
             log('Provider updated: ' + providerId + ' (success: ' + success + ')');
             onProviderUpdated(providerId);
             ConfigBridge.notifyStatus();
-        }
+        },
+        forceRefresh
     );
 }
 
@@ -161,9 +173,12 @@ function startApp() {
 }
 
 // === Auto-refresh Timer ===
+// The cache lasts as long as the interval, and is stamped when the answer
+// arrives, so a tick would usually find it still valid and fetch nothing
+// until the tick after. The timer is the reason to fetch, so it always does.
 setInterval(function() {
     helpers.log('Auto-refresh triggered');
-    fetchLocationAndWeather();
+    fetchLocationAndWeather(true);
 }, 60000 * appState.refreshInterval);
 
 // === Start App ===

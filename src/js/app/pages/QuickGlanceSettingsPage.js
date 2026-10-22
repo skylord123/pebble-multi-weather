@@ -7,7 +7,6 @@ var Settings = require('settings');
 var AppState = require('app/AppState');
 var Constants = require('app/Constants');
 var helpers = require('app/helpers');
-var WeatherManager = require('app/services/WeatherManager');
 var MenuTheme = require('app/ui/MenuTheme');
 
 var QuickGlanceSettingsPage = {
@@ -85,32 +84,8 @@ var QuickGlanceSettingsPage = {
     },
 
     _refreshMainMenu: function() {
-        var appState = AppState.getInstance();
-        if (!appState.mainMenu) {
-            return;
-        }
-
-        var providerOrder = WeatherManager.getProviderOrder();
-        var items = [];
-
-        for (var i = 0; i < providerOrder.length; i++) {
-            var providerId = providerOrder[i];
-            var service = WeatherManager.getService(providerId);
-            if (service) {
-                items.push({
-                    title: service.getName(),
-                    subtitle: WeatherManager.getProviderSummary(providerId),
-                    providerId: providerId
-                });
-            }
-        }
-
-        items.push({
-            title: 'Settings',
-            providerId: 'settings'
-        });
-
-        appState.mainMenu.items(0, items);
+        // Required here: MainMenuPage requires this page
+        require('app/pages/MainMenuPage').rebuild();
     }
 };
 

@@ -14,6 +14,8 @@ class AppState {
         // Location settings
         this.latitude = null;
         this.longitude = null;
+        // Whether the phone could not find its location and none was known
+        this.locationFailed = false;
 
         // Weather data by provider
         this.weatherData = {};

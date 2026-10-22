@@ -52,6 +52,11 @@ var SettingsManager = {
         appState.customTemplate = Settings.option('custom_template') || Constants.defaultCustomTemplate;
         log('Custom template: ' + appState.customTemplate);
 
+        // The forecast as a third line under each provider on the main menu
+        // (on unless switched off)
+        appState.mainMenuForecast = Settings.option('main_menu_forecast') !== false;
+        log('Main menu forecast: ' + appState.mainMenuForecast);
+
         // Detailed forecast subtitle preference
         appState.detailedForecastSubtitle = Settings.option('detailed_forecast_subtitle') || Constants.detailedForecastSubtitle.SHORT_FORECAST;
         log('Detailed forecast subtitle: ' + appState.detailedForecastSubtitle);
@@ -131,6 +136,25 @@ var SettingsManager = {
     },
 
     /**
+     * The options the settings page works with: everything but the app's
+     * own bookkeeping. The cached weather in particular is large, and the
+     * hosted page gets the options in its URL, which a phone app may cut short.
+     * @returns {Object}
+     */
+    pageOptions: function() {
+        var options = Settings.option() || {};
+        var result = {};
+        for (var key in options) {
+            if (options.hasOwnProperty(key) &&
+                key.indexOf(Constants.cachePrefix) !== 0 &&
+                key !== 'cached_latitude' && key !== 'cached_longitude') {
+                result[key] = options[key];
+            }
+        }
+        return result;
+    },
+
+    /**
      * Initialize the settings config page handler
      * @param {Object} options - Configuration options
      * @param {Function} options.onSettingsChanged - Callback when settings change
@@ -139,27 +163,33 @@ var SettingsManager = {
         var self = this;
         var log = helpers.log;
 
+        // The page's URL is built here rather than by Settings, which would
+        // put every option in it
         Settings.config({
-            url: options.configPageUrl || ''
+            url: options.configPageUrl || '',
+            hash: false
         },
         function(e) {
             log('Settings page opened');
+            return (options.configPageUrl || '') + '#' +
+                encodeURIComponent(JSON.stringify(self.pageOptions()));
         },
         function(e) {
             log('Settings page closed');
-            log('Returned settings: ' + JSON.stringify(e.options));
-            Settings.option(e.options);
 
+            // Closed without saving: nothing changed, so nothing to reload
+            // or fetch again
             if (e.failed) {
-                log('Settings error: ' + e.response);
+                log('Settings not saved: ' + e.response);
+                return;
             }
 
-            // Reload settings
-            self.load();
-
-            // Call the callback if provided
+            // Settings has already stored what the page returned
+            log('Returned settings: ' + JSON.stringify(e.options));
             if (options.onSettingsChanged) {
                 options.onSettingsChanged();
+            } else {
+                self.load();
             }
         });
     }

@@ -30,6 +30,11 @@ struct SimplyTouch {
   // Whether holding a finger on a menu row fires the long select event, so
   // touch can be used for navigation only without triggering long press actions.
   bool long_press;
+
+  // Whether any JS code listens for taps, swipes or raw touches. The sensor
+  // stays on for the watch's own use (menus, scrolling, swipe back) either
+  // way; this only decides whether touches are sent to the phone.
+  bool js_subscribed;
 };
 
 #ifdef SIMPLY_HAS_TOUCH

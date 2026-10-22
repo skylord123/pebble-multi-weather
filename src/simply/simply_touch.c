@@ -96,9 +96,14 @@ static bool send_touch_data(const TouchEvent *event) {
 }
 
 // Pebble's time_ms() only returns milliseconds within the current second, so
-// pair it with the seconds clock to get something subtractable
+// pair it with the seconds to get something subtractable. Both come from the
+// one call: read separately, a second could tick over between them and the
+// time go back by nearly a second, which made a tap look too old to count.
 static uint32_t now_ms(void) {
-  return (uint32_t) time(NULL) * 1000u + (uint32_t) time_ms(NULL, NULL);
+  time_t seconds;
+  uint16_t millis;
+  time_ms(&seconds, &millis);
+  return (uint32_t) seconds * 1000u + (uint32_t) millis;
 }
 
 static SimplyMenu *prv_top_menu(Simply *simply) {
@@ -183,6 +188,9 @@ static void prv_drag_move(int16_t y) {
 static int prv_fling_carry(void) {
   const uint32_t dt = s_last_ms - s_prev_ms;
   if (dt == 0 || dt > 100) { return 0; }  // stale samples: finger had stopped
+  // No new position since: the finger was held still before it lifted, and
+  // the last two samples are from the movement before that
+  if (now_ms() - s_last_ms > 100) { return 0; }
   return (s_last_y - s_prev_y) * (int) FLING_MS / (int) dt;
 }
 
@@ -317,6 +325,11 @@ static void handle_touch(const TouchEvent *event, void *context) {
     }
   }
 
+  // Every message to the phone wakes it and holds up the next one, such as
+  // the select a tap just made, so touches only go when JS wants them
+  if (!s_touch->js_subscribed) {
+    return;
+  }
   if (event->type == TouchEvent_PositionUpdate && !s_touch->wants_moves) {
     return;
   }
@@ -345,11 +358,13 @@ static void handle_touch_config_packet(Simply *simply, Packet *data) {
   if (!simply->touch) {
     return;
   }
+  simply->touch->js_subscribed = packet->subscribed;
   simply->touch->wants_moves = packet->wants_moves;
   simply->touch->long_press = packet->long_press;
   // The user setting is the only thing that turns the sensor off:
   // `subscribed` reflects JS handler counts, but C-side consumers (menus,
-  // scrolling, swipe back) need the sensor regardless of what JS registered
+  // scrolling, swipe back) need the sensor regardless of what JS registered,
+  // so it only decides what is sent
   set_subscribe(simply->touch, packet->enabled);
 }
 

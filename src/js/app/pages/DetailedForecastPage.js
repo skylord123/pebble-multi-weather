@@ -137,7 +137,7 @@ var DetailedForecastPage = {
                 return '';
 
             case Constants.detailedForecastSubtitle.WIND:
-                return this._formatWind(period);
+                return this._formatWind(period, appState);
 
             case Constants.detailedForecastSubtitle.CUSTOM_TEMPLATE:
                 return this._processSubtitleTemplate(period, hourlyForecast, appState, options);
@@ -187,7 +187,7 @@ var DetailedForecastPage = {
             '{temp_c_high}': highC !== null ? Math.round(highC) + 'C' : '--',
             '{temp_c_low}': lowC !== null ? Math.round(lowC) + 'C' : '--',
             // Wind - full formatted string (direction + speed)
-            '{wind}': this._formatWind(period) || '--',
+            '{wind}': this._formatWind(period, appState) || '--',
             // Wind speed based on selected unit
             '{windspeed}': (function() {
                 if (windMph === null) return '--';
@@ -205,9 +205,7 @@ var DetailedForecastPage = {
             '{short_forecast}': period.shortForecast || '--',
             '{long_forecast}': period.detailedForecast || period.shortForecast || '--',
             // Precipitation
-            '{precip}': period.precipitationChance !== null && period.precipitationChance !== undefined
-                ? period.precipitationChance + '%'
-                : '--'
+            '{precip}': this._formatPrecipitation(period)
         };
 
         var result = template;
@@ -294,18 +292,35 @@ var DetailedForecastPage = {
     },
 
     /**
+     * The chance of precipitation as a percentage, or for MET Norway the
+     * amount in millimetres
+     * @private
+     */
+    _formatPrecipitation: function(period) {
+        var precipitation = period.probabilityOfPrecipitation;
+        if (!precipitation || precipitation.value === null || precipitation.value === undefined ||
+            isNaN(precipitation.value)) {
+            return '--';
+        }
+        if (precipitation.unitCode === 'mm') {
+            return (Math.round(precipitation.value * 10) / 10) + ' mm';
+        }
+        return Math.round(precipitation.value) + '%';
+    },
+
+    /**
      * Format high/low temperature for display
      * @private
      */
     _formatHighLow: function(highLow, appState) {
         var unit = appState.temperatureUnit || 'F';
         var showBoth = appState.temperatureShowBoth;
-        var high = highLow.high;
-        var low = highLow.low;
+        var high = Math.round(highLow.high);
+        var low = Math.round(highLow.low);
 
         if (showBoth) {
-            var highC = helpers.fahrenheitToCelsius(high);
-            var lowC = helpers.fahrenheitToCelsius(low);
+            var highC = Math.round(helpers.fahrenheitToCelsius(highLow.high));
+            var lowC = Math.round(helpers.fahrenheitToCelsius(highLow.low));
             if (unit === 'C') {
                 return 'H:' + highC + '°C/' + high + '°F L:' + lowC + '°C/' + low + '°F';
             }
@@ -313,8 +328,8 @@ var DetailedForecastPage = {
         }
 
         if (unit === 'C') {
-            high = helpers.fahrenheitToCelsius(high);
-            low = helpers.fahrenheitToCelsius(low);
+            high = Math.round(helpers.fahrenheitToCelsius(highLow.high));
+            low = Math.round(helpers.fahrenheitToCelsius(highLow.low));
         }
 
         return 'H:' + high + '° L:' + low + '°';
@@ -324,13 +339,20 @@ var DetailedForecastPage = {
      * Format wind information for display
      * @private
      */
-    _formatWind: function(period) {
+    _formatWind: function(period, appState) {
         var parts = [];
         if (period.windDirection) {
             parts.push(period.windDirection);
         }
-        if (period.windSpeed) {
-            parts.push(period.windSpeed);
+        // Providers give the speed as mph, either a number or text such as
+        // "5 mph" or "5 to 10 mph", so it is put in the user's unit here
+        var speedMph = helpers.parseWindSpeed(period.windSpeed);
+        if (speedMph !== null && !isNaN(speedMph)) {
+            if (appState && appState.speedUnit === Constants.speedUnits.KMH) {
+                parts.push(Math.round(helpers.mphToKmh(speedMph)) + ' km/h');
+            } else {
+                parts.push(Math.round(speedMph) + ' mph');
+            }
         }
         return parts.join(' ') || '';
     },

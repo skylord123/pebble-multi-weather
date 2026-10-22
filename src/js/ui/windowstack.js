@@ -115,6 +115,10 @@ WindowStack.prototype.length = function() {
 
 WindowStack.prototype.emitHide = function(windowId) {
   var wind = this.get(windowId);
+  // Only the window on top closes on a hide from the watch. Showing a window
+  // of another kind (a graph over a menu, say) removes the one before it on
+  // the watch, which reports that window hidden too, though it is still
+  // underneath here and back should return to it.
   if (wind !== this.top()) { return; }
   this.remove(wind);
 };

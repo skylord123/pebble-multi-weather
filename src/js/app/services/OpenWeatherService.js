@@ -164,13 +164,17 @@ class OpenWeatherService extends WeatherService {
         }, function(err, status) {
             log('OpenWeather: Request error - ' + err + ' (status: ' + status + ')');
 
+            // OpenWeatherMap's own message says why: most often a key that
+            // works but has no One Call 3.0 subscription, or is not active yet
+            var apiMessage = err && typeof err === 'object' && err.message ? String(err.message) : null;
+
             // Handle specific error codes
             if (status === 401) {
                 var authErr = {
                     isApiError: true,
                     type: 'InvalidApiKey',
-                    title: 'Invalid API Key',
-                    detail: 'Your OpenWeatherMap API key is invalid. Please check your settings.'
+                    title: 'API Key Not Accepted',
+                    detail: apiMessage || 'Your OpenWeatherMap API key is invalid. Please check your settings.'
                 };
                 onError(authErr);
                 return;
@@ -184,6 +188,11 @@ class OpenWeatherService extends WeatherService {
                     detail: 'Too many API requests. Please try again later.'
                 };
                 onError(rateErr);
+                return;
+            }
+
+            if (apiMessage) {
+                onError({ isApiError: true, type: 'ApiError', title: 'API Error', detail: apiMessage });
                 return;
             }
 
@@ -254,7 +263,13 @@ class OpenWeatherService extends WeatherService {
         for (var i = 0; i < daily.length; i++) {
             var day = daily[i];
             var weather = day.weather && day.weather[0] ? day.weather[0] : {};
-            var startTime = day.dt ? day.dt * 1000 : null;
+            // dt is midday; the day runs from the midnight before it
+            var startTime = null;
+            if (day.dt) {
+                var midnight = new Date(day.dt * 1000);
+                midnight.setHours(0, 0, 0, 0);
+                startTime = midnight.getTime();
+            }
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
 
             periods.push({

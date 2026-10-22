@@ -38,7 +38,9 @@ class OpenMeteoService extends WeatherService {
             'weather_code',
             'wind_speed_10m',
             'wind_direction_10m',
-            'surface_pressure',
+            // Sea level, as every other provider reports it; the pressure at
+            // the surface reads low by about an inch of mercury per 1000 ft
+            'pressure_msl',
             'is_day'
         ];
 
@@ -129,7 +131,7 @@ class OpenMeteoService extends WeatherService {
                 humidity: self._roundValue(self._pickValue(current.relative_humidity_2m, hourly.relative_humidity_2m, currentHourIndex)),
                 windSpeed: self._pickValue(current.wind_speed_10m, hourly.wind_speed_10m, currentHourIndex),
                 windDirection: self._degreesToCompass(self._pickValue(current.wind_direction_10m, hourly.wind_direction_10m, currentHourIndex)),
-                barometer: self._pressureToPascals(self._pickValue(current.surface_pressure, hourly.pressure_msl, currentHourIndex)),
+                barometer: self._pressureToPascals(self._pickValue(current.pressure_msl, hourly.pressure_msl, currentHourIndex)),
                 dewpoint: self._pickValue(null, hourly.dew_point_2m, currentHourIndex),
                 visibility: self._pickValue(null, hourly.visibility, currentHourIndex),
                 observationTime: self._parseTime(current.time || (hourly.time && hourly.time[currentHourIndex])),
@@ -206,7 +208,7 @@ class OpenMeteoService extends WeatherService {
         var weatherCodeSeries = daily.weather_code || daily.weathercode;
 
         for (var i = 0; i < daily.time.length; i++) {
-            var startTime = this._parseTime(daily.time[i]);
+            var startTime = helpers.localDate(daily.time[i]);
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
             var weatherCode = this._pickValue(null, weatherCodeSeries, i);
             var windSpeed = this._pickValue(null, daily.wind_speed_10m_max, i);
@@ -276,15 +278,19 @@ class OpenMeteoService extends WeatherService {
             }
         }
 
+        // The current time comes in 15 minute steps ("12:30"), so it seldom
+        // matches an hour exactly: start at the hour it falls in
         var nowTime = currentTime ? this._parseTime(currentTime) : Date.now();
+        var start = 0;
         for (var j = 0; j < hourly.time.length; j++) {
             var periodTime = this._parseTime(hourly.time[j]);
-            if (periodTime !== null && periodTime !== undefined && periodTime >= nowTime) {
-                return j;
+            if (periodTime === null || periodTime === undefined || periodTime > nowTime) {
+                break;
             }
+            start = j;
         }
 
-        return 0;
+        return start;
     }
 
     _pressureToPascals(value) {

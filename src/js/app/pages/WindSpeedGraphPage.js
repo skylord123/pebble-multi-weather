@@ -115,7 +115,8 @@ var WindSpeedGraphPage = {
     },
 
     _parseWindSpeed: function(speed) {
-        if (!speed) {
+        // Not !speed: a calm 0 is a reading, not a missing one
+        if (speed === null || speed === undefined || speed === '') {
             return null;
         }
         if (typeof speed === 'number') {
@@ -151,8 +152,15 @@ var WindSpeedGraphPage = {
             min = 0;
             max = 1;
         }
-        if (min === max) {
-            max = min + 1;
+        // Whole numbers that split evenly into the graph's three ticks, so
+        // each label is the value on its line and no two labels read the same
+        min = Math.floor(min);
+        max = Math.ceil(max);
+        if (max - min < 2) {
+            max = min + 2;
+        }
+        if ((max - min) % 2) {
+            max += 1;
         }
         return { min: min, max: max };
     },

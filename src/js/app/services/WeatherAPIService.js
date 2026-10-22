@@ -172,13 +172,29 @@ class WeatherAPIService extends WeatherService {
         }, function(err, status) {
             log('WeatherAPI: Request error - ' + err + ' (status: ' + status + ')');
 
+            // WeatherAPI.com says what went wrong in its body, with a code:
+            // https://www.weatherapi.com/docs/#intro-error-codes
+            var apiError = err && typeof err === 'object' && err.error ? err.error : null;
+            var apiMessage = apiError && apiError.message ? String(apiError.message) : null;
+
+            // The month's calls are used up: a new key will not help
+            if (apiError && apiError.code === 2007) {
+                onError({
+                    isApiError: true,
+                    type: 'RateLimited',
+                    title: 'Monthly Limit Reached',
+                    detail: apiMessage || 'This API key has used up its calls for the month.'
+                });
+                return;
+            }
+
             // Handle specific error codes
             if (status === 401 || status === 403) {
                 var authErr = {
                     isApiError: true,
                     type: 'InvalidApiKey',
-                    title: 'Invalid API Key',
-                    detail: 'Your WeatherAPI.com API key is invalid. Please check your settings.'
+                    title: 'API Key Not Accepted',
+                    detail: apiMessage || 'Your WeatherAPI.com API key is invalid. Please check your settings.'
                 };
                 onError(authErr);
                 return;
@@ -192,6 +208,11 @@ class WeatherAPIService extends WeatherService {
                     detail: 'Too many API requests. Please try again later.'
                 };
                 onError(rateErr);
+                return;
+            }
+
+            if (apiMessage) {
+                onError({ isApiError: true, type: 'ApiError', title: 'API Error', detail: apiMessage });
                 return;
             }
 
@@ -241,7 +262,7 @@ class WeatherAPIService extends WeatherService {
                     temperatureTrend: null,
                     probabilityOfPrecipitation: {
                         unitCode: 'wmoUnit:percent',
-                        value: hour.chance_of_rain || 0
+                        value: Math.max(hour.chance_of_rain || 0, hour.chance_of_snow || 0)
                     },
                     dewpoint: {
                         unitCode: null,
@@ -278,7 +299,8 @@ class WeatherAPIService extends WeatherService {
         for (var i = 0; i < forecastDays.length; i++) {
             var day = forecastDays[i];
             var dayData = day.day;
-            var startTime = day.date_epoch ? day.date_epoch * 1000 : null;
+            // date_epoch is midnight UTC; the date itself is the location's
+            var startTime = helpers.localDate(day.date) || (day.date_epoch ? day.date_epoch * 1000 : null);
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
 
             periods.push({
@@ -292,7 +314,7 @@ class WeatherAPIService extends WeatherService {
                 temperatureTrend: null,
                 probabilityOfPrecipitation: {
                     unitCode: 'wmoUnit:percent',
-                    value: dayData ? dayData.daily_chance_of_rain : 0
+                    value: dayData ? Math.max(dayData.daily_chance_of_rain || 0, dayData.daily_chance_of_snow || 0) : 0
                 },
                 windSpeed: dayData ? Math.round(dayData.maxwind_mph) + ' mph' : null,
                 windDirection: null,

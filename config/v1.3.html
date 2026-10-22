@@ -683,6 +683,11 @@
 				</select>
 				<p class="form-text">Choose what information displays below each provider name.</p>
 			</div>
+			<div class="form-switch" style="padding-bottom:0">
+				<label class="form-check-label" for="main-menu-forecast">Forecast line</label>
+				<input type="checkbox" id="main-menu-forecast" checked>
+			</div>
+			<p class="form-text" style="margin-top:0;">Shows the forecast as a third line under each provider on the main menu. Not shown when Quick Glance is already the forecast.</p>
 			<div id="custom-template-group">
 				<label class="form-label" for="custom-template">Template</label>
 				<input type="text" id="custom-template" class="form-input" placeholder="{temp} H:{temp_high} L:{temp_low}">
@@ -896,6 +901,9 @@
 
 	// Store for API keys
 	var apiKeys = {};
+	// Keys the page loaded or the user edited. Only these are saved: a key the
+	// page never saw is the watch's to keep, not an empty string to send back.
+	var apiKeysKnown = {};
 
 	var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
 	var DEFAULT_FORECAST_SUBTITLE_TEMPLATE = '{temp} {temp_high} / {temp_low} {precip}';
@@ -1292,6 +1300,7 @@
 	// provider on, since that is what the watch did with it.
 	function useApiKey(provider, apiKey, switchOn) {
 		apiKeys[provider.apiKeySettingName] = apiKey;
+		apiKeysKnown[provider.apiKeySettingName] = true;
 		var checkbox = document.querySelector('input[data-provider="' + provider.id + '"]');
 		if (checkbox) {
 			setCheckboxForKey(checkbox, provider, switchOn || checkbox.checked);
@@ -1400,6 +1409,7 @@
 		PROVIDERS.forEach(function(provider) {
 			if (provider.requiresApiKey && provider.apiKeySettingName) {
 				apiKeys[provider.apiKeySettingName] = options[provider.apiKeySettingName] || '';
+				apiKeysKnown[provider.apiKeySettingName] = options.hasOwnProperty(provider.apiKeySettingName);
 			}
 		});
 
@@ -1425,6 +1435,7 @@
 		$('speed-unit').value = options.speed_unit || 'mph';
 		$('time-format').value = options.time_format || '12h';
 		$('temp-show-both').checked = !!tempShowBoth;
+		$('main-menu-forecast').checked = options.main_menu_forecast !== false;
 		$('menu-background').value = options.menu_background_mode || 'sun';
 		$('touch-enabled').checked = options.touch_enabled !== false;
 		$('touch-long-press').checked = options.touch_long_press !== false;
@@ -1447,6 +1458,7 @@
 			speed_unit: $('speed-unit').value,
 			time_format: $('time-format').value,
 			temperature_show_both: $('temp-show-both').checked,
+			main_menu_forecast: $('main-menu-forecast').checked,
 			menu_background_mode: $('menu-background').value,
 			touch_enabled: $('touch-enabled').checked,
 			touch_long_press: $('touch-long-press').checked,
@@ -1456,7 +1468,7 @@
 
 		// Add API keys to payload
 		for (var key in apiKeys) {
-			if (apiKeys.hasOwnProperty(key)) {
+			if (apiKeys.hasOwnProperty(key) && apiKeysKnown[key]) {
 				payload[key] = apiKeys[key];
 			}
 		}
@@ -1508,14 +1520,21 @@
 	// ===== Loading ==========================================================
 
 	function loadFromHash() {
-		var options = {};
+		var options = null;
 		var hash = window.location.hash;
 		if (hash && hash.length > 1) {
 			try {
-				options = JSON.parse(decodeURIComponent(hash.substring(1))) || {};
+				options = JSON.parse(decodeURIComponent(hash.substring(1)));
 			} catch (e) {
-				options = {};
+				options = null;
 			}
+		}
+		if (!options || typeof options !== 'object') {
+			// Saving now would put these defaults over whatever the watch has
+			display_alert('warning', '<strong>Your current settings could not be loaded,</strong> ' +
+				'so this page shows the defaults. Saving replaces your settings with what is shown here, ' +
+				'apart from API keys you do not change.');
+			options = {};
 		}
 		populateForm(options);
 	}

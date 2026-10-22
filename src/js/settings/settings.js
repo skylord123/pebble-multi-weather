@@ -110,11 +110,11 @@ var makeDataAccessor = function(type, path) {
     if (arguments.length === 1 && typeof field !== 'object') {
       return data[field];
     }
-    if (typeof field !== 'object' && value === undefined || value === null) {
+    if (typeof field !== 'object' && (value === undefined || value === null)) {
       delete data[field];
+    } else {
+      util2.copy(myutil.toObject(field, value), data);
     }
-    var def = myutil.toObject(field, value);
-    util2.copy(def, data);
     Settings._saveData(path, type);
   };
 };
@@ -183,7 +183,15 @@ Settings.onCloseConfig = function(e) {
   var options = {};
   var format;
   if (e.response) {
-    options = parseJson(decodeURIComponent(e.response));
+    // Some phone apps hand the response over already decoded, and a literal
+    // % in it (a template such as "{humidity}%") makes decoding throw
+    var response = e.response;
+    try {
+      response = decodeURIComponent(e.response);
+    } catch (err) {
+      response = e.response;
+    }
+    options = parseJson(response);
     if (typeof options === 'object' && options !== null) {
       format = 'json';
     }

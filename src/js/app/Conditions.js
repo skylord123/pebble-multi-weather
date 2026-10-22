@@ -197,8 +197,9 @@ var Conditions = {
             return 'rain';
         }
         if (code.indexOf('fog') !== -1) return 'lowvisibility';
-        if (code.indexOf('cloudy') !== -1) return 'cloudy';
+        // Before 'cloudy', which 'partlycloudy' also contains
         if (code.indexOf('partlycloudy') !== -1) return 'partlycloudy';
+        if (code.indexOf('cloudy') !== -1) return 'cloudy';
         if (code.indexOf('fair') !== -1 || code.indexOf('clearsky') !== -1) return 'sunny';
 
         return 'na';
