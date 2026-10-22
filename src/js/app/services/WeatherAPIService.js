@@ -278,7 +278,8 @@ class WeatherAPIService extends WeatherService {
         for (var i = 0; i < forecastDays.length; i++) {
             var day = forecastDays[i];
             var dayData = day.day;
-            var startTime = day.date_epoch ? day.date_epoch * 1000 : null;
+            // date_epoch is midnight UTC; the date itself is the location's
+            var startTime = helpers.localDate(day.date) || (day.date_epoch ? day.date_epoch * 1000 : null);
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
 
             periods.push({

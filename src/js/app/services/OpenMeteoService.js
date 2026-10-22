@@ -206,7 +206,7 @@ class OpenMeteoService extends WeatherService {
         var weatherCodeSeries = daily.weather_code || daily.weathercode;
 
         for (var i = 0; i < daily.time.length; i++) {
-            var startTime = this._parseTime(daily.time[i]);
+            var startTime = helpers.localDate(daily.time[i]);
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
             var weatherCode = this._pickValue(null, weatherCodeSeries, i);
             var windSpeed = this._pickValue(null, daily.wind_speed_10m_max, i);
