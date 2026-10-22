@@ -278,15 +278,19 @@ class OpenMeteoService extends WeatherService {
             }
         }
 
+        // The current time comes in 15 minute steps ("12:30"), so it seldom
+        // matches an hour exactly: start at the hour it falls in
         var nowTime = currentTime ? this._parseTime(currentTime) : Date.now();
+        var start = 0;
         for (var j = 0; j < hourly.time.length; j++) {
             var periodTime = this._parseTime(hourly.time[j]);
-            if (periodTime !== null && periodTime !== undefined && periodTime >= nowTime) {
-                return j;
+            if (periodTime === null || periodTime === undefined || periodTime > nowTime) {
+                break;
             }
+            start = j;
         }
 
-        return 0;
+        return start;
     }
 
     _pressureToPascals(value) {
