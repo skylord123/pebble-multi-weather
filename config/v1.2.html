@@ -688,6 +688,24 @@
 		</div>
 	</div>
 
+	<div class="section">
+		<div class="section-header">Touch</div>
+		<div class="section-body">
+			<div class="form-switch" style="padding-bottom:0">
+				<label class="form-check-label" for="touch-enabled">Touch Input</label>
+				<input type="checkbox" id="touch-enabled" checked>
+			</div>
+			<p class="form-text" style="margin-top:0;">Tap to select, slide to scroll, hold for a long press, and swipe right to go back on watches with a touchscreen.</p>
+			<div id="touch-long-press-wrap">
+				<div class="form-switch" style="padding-bottom:0">
+					<label class="form-check-label" for="touch-long-press">Touch Long Press Actions</label>
+					<input type="checkbox" id="touch-long-press" checked>
+				</div>
+				<p class="form-text" style="margin-top:0;">Holding a finger on an item acts like holding the select button. Disable to use touch for navigation only.</p>
+			</div>
+		</div>
+	</div>
+
 	<div class="save-container">
 		<button type="button" class="btn btn-primary" id="save-btn">Save</button>
 	</div>
@@ -855,6 +873,8 @@
 			time_format: document.getElementById('time-format').value,
 			temperature_show_both: document.getElementById('temp-show-both').checked,
 			menu_background_mode: document.getElementById('menu-background').value,
+			touch_enabled: document.getElementById('touch-enabled').checked,
+			touch_long_press: document.getElementById('touch-long-press').checked,
 			detailed_forecast_subtitle: document.getElementById('detailed-forecast-subtitle').value,
 			detailed_forecast_subtitle_template: document.getElementById('forecast-subtitle-template').value || DEFAULT_FORECAST_SUBTITLE_TEMPLATE
 		};
@@ -1079,6 +1099,18 @@
 		document.getElementById('time-format').value = timeFormat;
 		document.getElementById('temp-show-both').checked = !!tempShowBoth;
 		document.getElementById('menu-background').value = menuBackgroundMode;
+
+		// Touch settings (both default enabled). Long press only means
+		// something while touch is on, so it is hidden otherwise.
+		var touchEnabled = document.getElementById('touch-enabled');
+		var touchLongPressWrap = document.getElementById('touch-long-press-wrap');
+		touchEnabled.checked = options.touch_enabled !== false;
+		document.getElementById('touch-long-press').checked = options.touch_long_press !== false;
+		function toggleTouchLongPress() {
+			touchLongPressWrap.style.display = touchEnabled.checked ? '' : 'none';
+		}
+		touchEnabled.addEventListener('change', toggleTouchLongPress);
+		toggleTouchLongPress();
 		document.getElementById('detailed-forecast-subtitle').value = detailedForecastSubtitle;
 		document.getElementById('forecast-subtitle-template').value = forecastSubtitleTemplate;
 

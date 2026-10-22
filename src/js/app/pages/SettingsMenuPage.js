@@ -13,6 +13,7 @@ var ForecastSubtitleSettingsPage = require('app/pages/ForecastSubtitleSettingsPa
 var WeatherManager = require('app/services/WeatherManager');
 var IconMapper = require('app/IconMapper');
 var MenuTheme = require('app/ui/MenuTheme');
+var Touch = require('ui/touch');
 
 var SettingsMenuPage = {
     menu: null,
@@ -24,6 +25,54 @@ var SettingsMenuPage = {
 
         log('SettingsMenuPage: Showing');
 
+        var items = [
+            {
+                title: 'Providers',
+                subtitle: 'Enable or disable',
+                id: 'providers'
+            },
+            {
+                title: 'Quick Glance',
+                subtitle: this._formatQuickGlance(appState.quickGlance),
+                id: 'quick_glance'
+            },
+            {
+                title: 'Forecast Subtitle',
+                subtitle: this._formatForecastSubtitle(appState.detailedForecastSubtitle),
+                id: 'forecast_subtitle'
+            },
+            {
+                title: 'Time Format',
+                subtitle: this._formatTimeFormat(appState.timeFormat),
+                id: 'time_format'
+            },
+            {
+                title: 'Temp Unit',
+                subtitle: this._formatUnit(appState.temperatureUnit),
+                id: 'temp_unit'
+            },
+            {
+                title: 'Speed Unit',
+                subtitle: this._formatSpeedUnit(appState.speedUnit),
+                id: 'speed_unit'
+            },
+            {
+                title: 'Show both temperature units',
+                subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
+                id: 'temp_both'
+            },
+            {
+                title: 'Menu Background',
+                subtitle: this._formatMenuBackground(appState.menuBackgroundMode),
+                id: 'menu_background'
+            }
+        ];
+
+        // Only show touch settings on watches with a touchscreen
+        if (Touch.supported()) {
+            items.push(this._touchItem());
+        }
+
         var menuColors = MenuTheme.getMenuColors();
         this.menu = new UI.Menu({
             status: false,
@@ -33,48 +82,7 @@ var SettingsMenuPage = {
             highlightTextColor: menuColors.highlightTextColor,
             sections: [{
                 title: 'Settings',
-                items: [
-                    {
-                        title: 'Providers',
-                        subtitle: 'Enable or disable',
-                        id: 'providers'
-                    },
-                    {
-                        title: 'Quick Glance',
-                        subtitle: this._formatQuickGlance(appState.quickGlance),
-                        id: 'quick_glance'
-                    },
-                    {
-                        title: 'Forecast Subtitle',
-                        subtitle: this._formatForecastSubtitle(appState.detailedForecastSubtitle),
-                        id: 'forecast_subtitle'
-                    },
-                    {
-                        title: 'Time Format',
-                        subtitle: this._formatTimeFormat(appState.timeFormat),
-                        id: 'time_format'
-                    },
-                    {
-                        title: 'Temp Unit',
-                        subtitle: this._formatUnit(appState.temperatureUnit),
-                        id: 'temp_unit'
-                    },
-                    {
-                        title: 'Speed Unit',
-                        subtitle: this._formatSpeedUnit(appState.speedUnit),
-                        id: 'speed_unit'
-                    },
-                    {
-                        title: 'Show both temperature units',
-                        subtitle: appState.temperatureShowBoth ? 'On' : 'Off',
-                        id: 'temp_both'
-                    },
-                    {
-                        title: 'Menu Background',
-                        subtitle: this._formatMenuBackground(appState.menuBackgroundMode),
-                        id: 'menu_background'
-                    }
-                ]
+                items: items
             }]
         });
 
@@ -167,7 +175,75 @@ var SettingsMenuPage = {
             });
             MenuTheme.applyToMenu(this.menu);
             MenuTheme.applyToMenu(appState.mainMenu);
+            return;
         }
+
+        if (itemId === 'touch') {
+            this._showTouchSettings(e.itemIndex);
+        }
+    },
+
+    _touchItem: function() {
+        var appState = AppState.getInstance();
+        return {
+            title: 'Touch',
+            subtitle: appState.touchEnabled ? 'Enabled' : 'Disabled',
+            id: 'touch'
+        };
+    },
+
+    /**
+     * Touch input settings: turning touch off powers the digitizer down, and
+     * long press actions can be turned off separately so touch is used for
+     * navigation only
+     */
+    _showTouchSettings: function(itemIndex) {
+        var self = this;
+        var appState = AppState.getInstance();
+        var menuColors = MenuTheme.getMenuColors();
+
+        var touchMenu = new UI.Menu({
+            status: false,
+            backgroundColor: menuColors.backgroundColor,
+            textColor: menuColors.textColor,
+            highlightBackgroundColor: menuColors.highlightBackgroundColor,
+            highlightTextColor: menuColors.highlightTextColor,
+            sections: [{
+                title: 'Touch'
+            }]
+        });
+
+        function updateMenuItems() {
+            touchMenu.items(0, [{
+                title: 'Touch Input',
+                subtitle: appState.touchEnabled ? 'Enabled' : 'Disabled',
+                key: 'touch_enabled'
+            }, {
+                title: 'Long Press Actions',
+                subtitle: !appState.touchEnabled ? 'Touch is disabled' :
+                          (appState.touchLongPress ? 'Enabled' : 'Disabled'),
+                key: 'touch_long_press'
+            }]);
+        }
+
+        touchMenu.on('show', updateMenuItems);
+
+        touchMenu.on('select', function(e) {
+            if (e.item.key === 'touch_enabled') {
+                appState.touchEnabled = !appState.touchEnabled;
+                Settings.option('touch_enabled', appState.touchEnabled);
+            } else if (appState.touchEnabled) {
+                appState.touchLongPress = !appState.touchLongPress;
+                Settings.option('touch_long_press', appState.touchLongPress);
+            } else {
+                return;
+            }
+            Touch.applySettings(appState.touchEnabled, appState.touchLongPress);
+            updateMenuItems();
+            self._updateItem(0, itemIndex, self._touchItem());
+        });
+
+        touchMenu.show();
     },
 
     _formatUnit: function(unit) {

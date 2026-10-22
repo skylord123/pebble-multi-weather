@@ -3,6 +3,7 @@
  */
 
 var Settings = require('settings');
+var Touch = require('ui/touch');
 var AppState = require('app/AppState');
 var Constants = require('app/Constants');
 var helpers = require('app/helpers');
@@ -75,6 +76,13 @@ var SettingsManager = {
         }
         appState.menuBackgroundMode = menuBackgroundMode;
         log('Menu background mode: ' + appState.menuBackgroundMode);
+
+        // Touch input settings (both default enabled; only meaningful on
+        // watches with a touchscreen)
+        appState.touchEnabled = Settings.option('touch_enabled') !== false;
+        appState.touchLongPress = Settings.option('touch_long_press') !== false;
+        Touch.applySettings(appState.touchEnabled, appState.touchLongPress);
+        log('Touch: ' + appState.touchEnabled + ', long press: ' + appState.touchLongPress);
 
         // Refresh interval in minutes
         appState.refreshInterval = Settings.option('refresh_interval');
