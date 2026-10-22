@@ -9,7 +9,7 @@ var Constants = {
 
     // Config page settings
     CONFIG_PAGE_BASE_URL: 'https://skylord123.github.io/pebble-multi-weather/config/',
-    CONFIG_PAGE_VERSION: 'v1.2.html',
+    CONFIG_PAGE_VERSION: 'v1.3.html',
 
     // Debug settings
     debug: true,

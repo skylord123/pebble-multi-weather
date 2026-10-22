@@ -1,0 +1,1603 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Multi Weather Config</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="color-scheme" content="light dark">
+	<!--
+		This page is served two ways from the one file:
+
+		- Hosted on GitHub Pages and opened by every Pebble phone app that only
+		  knows the classic flow. The settings arrive in the URL hash and go
+		  back through pebblejs://close# when Save is pressed, which shuts the
+		  page.
+		- Bundled in the pbw (appinfo.json configPage) for phone apps that can
+		  open it from there. Those inject a `Pebble` object with
+		  sendMessage/addEventListener, and the page uses it to load and save
+		  settings and test providers while staying open. It runs from a data:
+		  URL there, so nothing can be loaded from a relative path and
+		  localStorage is not available.
+
+		Whether the bridge is there decides which; nothing else differs. Both
+		need the page to be self-contained, so the icons are inline SVG and
+		there are no script libraries.
+	-->
+	<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+		<symbol id="icon-grip" fill="currentColor" viewBox="0 0 16 16">
+			<path d="M2 4.5a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.5zm0 3.5a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8zm.75 2.75a.75.75 0 0 0 0 1.5h10.5a.75.75 0 0 0 0-1.5H2.75z"/>
+		</symbol>
+		<symbol id="icon-gear" fill="currentColor" viewBox="0 0 16 16">
+			<path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+		</symbol>
+		<symbol id="icon-eye" fill="currentColor" viewBox="0 0 16 16">
+			<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+			<path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+		</symbol>
+		<symbol id="icon-eye-slash" fill="currentColor" viewBox="0 0 16 16">
+			<path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/>
+			<path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/>
+			<path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709zm10.296 8.884-12-12 .708-.708 12 12-.708.708z"/>
+		</symbol>
+	</svg>
+	<style>
+		:root {
+			--color-accent: #2d7a6b;
+			--color-accent-dark: #1f5a50;
+			--color-background: #f0f3f4;
+			--color-section-bg: #ffffff;
+			--color-section-header: #e7ecef;
+			--color-text: #1f2a30;
+			--color-text-muted: #5d6b73;
+			--color-divider: #d7dee2;
+			--shadow-section: 0 0.2rem 0.35rem rgba(0,0,0,0.12);
+			--shadow-button: 0 0.1rem 0.1rem rgba(0,0,0,0.1);
+			--color-danger: #b02a37;
+			--color-warning: #856404;
+			--color-info: #0f6674;
+			--color-success: #1e7e34;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--color-accent: #69c6b3;
+				--color-accent-dark: #3b8f80;
+				--color-background: #1f2427;
+				--color-section-bg: #2b3136;
+				--color-section-header: #24292d;
+				--color-text: #f4f6f7;
+				--color-text-muted: #9aa6ad;
+				--color-divider: #3b4248;
+				--shadow-section: 0 0.2rem 0.35rem rgba(0,0,0,0.4);
+				--shadow-button: 0 0.1rem 0.1rem rgba(0,0,0,0.3);
+				--color-danger: #ea868f;
+				--color-warning: #ffda6a;
+				--color-info: #6edff6;
+				--color-success: #75b798;
+			}
+		}
+
+		*, *:before, *:after {
+			box-sizing: border-box;
+		}
+
+		html, body {
+			margin: 0;
+			padding: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			font-size: 17px;
+			line-height: 1.4;
+			-webkit-font-smoothing: antialiased;
+			background-color: var(--color-background);
+			color: var(--color-text);
+		}
+
+		.container {
+			max-width: 640px;
+			margin: 0 auto;
+			padding: 0 0.9rem 1.5rem;
+		}
+
+		.page-header {
+			padding: 1.2rem 0 0.6rem;
+			text-align: center;
+		}
+
+		.page-header h1 {
+			margin: 0 0 0.3rem;
+			font-size: 1.35rem;
+			font-weight: 700;
+			letter-spacing: 0.02em;
+		}
+
+		.page-header p {
+			margin: 0;
+			font-size: 0.9rem;
+			color: var(--color-text-muted);
+		}
+
+		.section {
+			background: var(--color-section-bg);
+			border-radius: 0.3rem;
+			box-shadow: var(--shadow-section);
+			margin-top: 1rem;
+			overflow: hidden;
+		}
+
+		.section-header {
+			background: var(--color-section-header);
+			padding: 0.7rem 0.9rem;
+			font-size: 0.85rem;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+		}
+
+		.section-body {
+			padding: 0.9rem;
+		}
+
+		.form-text {
+			font-size: 0.85rem;
+			color: var(--color-text-muted);
+			margin: 0.2rem 0 0.8rem;
+		}
+
+		.list-group {
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		.list-group-item {
+			display: flex;
+			align-items: center;
+			padding: 0.65rem 0.7rem;
+			border: 1px solid var(--color-divider);
+			background: var(--color-section-bg);
+			margin-top: -1px;
+		}
+
+		.list-group-item:first-child {
+			border-top-left-radius: 0.25rem;
+			border-top-right-radius: 0.25rem;
+		}
+
+		.list-group-item:last-child {
+			border-bottom-left-radius: 0.25rem;
+			border-bottom-right-radius: 0.25rem;
+		}
+
+		.icon {
+			width: 1em;
+			height: 1em;
+			vertical-align: -0.125em;
+			flex-shrink: 0;
+		}
+
+		.list-group-item .drag-handle {
+			display: inline-flex;
+			cursor: grab;
+			color: var(--color-text-muted);
+			margin-right: 0.75rem;
+			flex-shrink: 0;
+			padding: 0.5rem;
+			margin-left: -0.5rem;
+			/* The handle drags the row, so the page must not scroll from it */
+			touch-action: none;
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+
+		.list-group-item .drag-handle:active {
+			cursor: grabbing;
+			color: var(--color-accent);
+		}
+
+		.list-group-item.dragging {
+			position: relative;
+			z-index: 2;
+			box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+			opacity: 0.95;
+		}
+
+		/* Anything that only makes sense with the watch app on the line */
+		html:not(.has-bridge) .bridge-only {
+			display: none !important;
+		}
+
+		/* Alerts */
+		.alert {
+			padding: 0.75rem 1rem;
+			border-radius: 0.25rem;
+			font-size: 0.9rem;
+		}
+
+		.alert-danger {
+			background-color: rgba(220, 53, 69, 0.15);
+			color: var(--color-danger);
+			border: 1px solid var(--color-danger);
+		}
+
+		.alert-warning {
+			background-color: rgba(255, 193, 7, 0.15);
+			color: var(--color-warning);
+			border: 1px solid var(--color-warning);
+		}
+
+		.alert-info {
+			background-color: rgba(23, 162, 184, 0.15);
+			color: var(--color-info);
+			border: 1px solid var(--color-info);
+		}
+
+		.alert-success {
+			background-color: rgba(40, 167, 69, 0.15);
+			color: var(--color-success);
+			border: 1px solid var(--color-success);
+		}
+
+		.alert a {
+			color: inherit;
+		}
+
+		#alert-container {
+			margin-top: 1rem;
+		}
+
+		#alert-container:empty {
+			display: none;
+		}
+
+		/* What the watch last got from a provider, and the button to try it */
+		.provider-status {
+			font-size: 0.8rem;
+			margin-top: 0.15rem;
+			color: var(--color-text-muted);
+			overflow-wrap: anywhere;
+		}
+
+		.provider-status.ok {
+			color: var(--color-success);
+		}
+
+		.provider-status.error {
+			color: var(--color-danger);
+		}
+
+		.link-btn {
+			background: none;
+			border: none;
+			padding: 0;
+			font: inherit;
+			font-size: 0.8rem;
+			font-weight: 600;
+			color: var(--color-accent);
+			cursor: pointer;
+		}
+
+		.link-btn:disabled {
+			color: var(--color-text-muted);
+			cursor: default;
+		}
+
+		.modal-result {
+			margin-top: 0.75rem;
+		}
+
+		.modal-result:empty {
+			display: none;
+		}
+
+		.provider-info {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.provider-name {
+			font-weight: 600;
+			font-size: 0.98rem;
+		}
+
+		.provider-desc {
+			font-size: 0.8rem;
+			color: var(--color-text-muted);
+		}
+
+		.form-check-input {
+			width: 1.35rem;
+			height: 1.35rem;
+			margin-left: 0.6rem;
+			background-color: var(--color-section-bg);
+			border: 2px solid var(--color-divider);
+			border-radius: 0.25rem;
+			appearance: none;
+			cursor: pointer;
+		}
+
+		.form-check-input:checked {
+			background-color: var(--color-accent);
+			border-color: var(--color-accent);
+			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+			background-size: 100%;
+			background-position: center;
+			background-repeat: no-repeat;
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			padding: 0.65rem 1.1rem;
+			font-size: 1rem;
+			font-weight: 600;
+			border-radius: 0.25rem;
+			border: none;
+			cursor: pointer;
+			transition: background-color 0.15s ease;
+		}
+
+		.btn-primary {
+			background-color: var(--color-accent);
+			color: #ffffff;
+		}
+
+		.btn-primary:hover {
+			background-color: var(--color-accent-dark);
+		}
+
+		.btn-secondary {
+			background-color: var(--color-section-header);
+			color: var(--color-text);
+		}
+
+		.save-container {
+			padding: 1rem 0 0.5rem;
+		}
+
+		.save-container .btn {
+			width: 100%;
+		}
+
+		.form-select {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			font-size: 1rem;
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			background: var(--color-section-bg);
+			color: var(--color-text);
+		}
+
+		.form-group {
+			margin-bottom: 0.6rem;
+		}
+
+		.form-label {
+			display: block;
+			font-size: 0.92rem;
+			font-weight: 600;
+			margin-bottom: 0.35rem;
+		}
+
+		.form-check-label {
+			font-size: 0.92rem;
+			font-weight: 500;
+		}
+
+		.form-switch {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.6rem;
+			padding: 0.4rem 0;
+		}
+
+		.form-switch input[type="checkbox"] {
+			width: 3rem;
+			height: 1.6rem;
+			border-radius: 1rem;
+			background-color: var(--color-divider);
+			appearance: none;
+			position: relative;
+			cursor: pointer;
+		}
+
+		.form-switch input[type="checkbox"]::before {
+			content: "";
+			position: absolute;
+			top: 0.15rem;
+			left: 0.15rem;
+			width: 1.3rem;
+			height: 1.3rem;
+			background: #fff;
+			border-radius: 50%;
+			transition: transform 0.2s ease;
+			box-shadow: var(--shadow-button);
+		}
+
+		.form-switch input[type="checkbox"]:checked {
+			background-color: var(--color-accent);
+		}
+
+		.form-switch input[type="checkbox"]:checked::before {
+			transform: translateX(1.35rem);
+		}
+
+		.form-input {
+			width: 100%;
+			padding: 0.55rem 0.75rem;
+			font-size: 1rem;
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			background: var(--color-section-bg);
+			color: var(--color-text);
+		}
+
+		.template-help {
+			margin-top: 0.5rem;
+			padding: 0.6rem;
+			background: var(--color-section-header);
+			border-radius: 0.25rem;
+		}
+
+		.template-help-title {
+			font-size: 0.8rem;
+			font-weight: 600;
+			margin-bottom: 0.4rem;
+			color: var(--color-text-muted);
+		}
+
+		.template-vars {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.3rem;
+		}
+
+		.template-var {
+			display: inline-block;
+			padding: 0.2rem 0.45rem;
+			font-size: 0.75rem;
+			font-family: monospace;
+			background: var(--color-section-bg);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.2rem;
+			cursor: pointer;
+			color: var(--color-accent);
+			text-decoration: none;
+			transition: background-color 0.15s ease;
+		}
+
+		.template-var:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		.template-section {
+			border-bottom: 1px solid var(--color-divider);
+			padding-bottom: 0.4rem;
+			margin-bottom: 0.4rem;
+		}
+
+		.template-section:last-child {
+			border-bottom: none;
+			padding-bottom: 0;
+			margin-bottom: 0;
+		}
+
+		.template-section-title {
+			font-size: 0.7rem;
+			font-weight: 600;
+			color: var(--color-text-muted);
+			margin-bottom: 0.25rem;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		#custom-template-group {
+			display: none;
+			margin-top: 0.6rem;
+		}
+
+		#custom-template-group.visible {
+			display: block;
+		}
+
+		#forecast-subtitle-template-group {
+			display: none;
+			margin-top: 0.6rem;
+		}
+
+		#forecast-subtitle-template-group.visible {
+			display: block;
+		}
+
+		/* Provider config button */
+		.provider-config-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2rem;
+			height: 2rem;
+			margin-left: 0.5rem;
+			background: var(--color-section-header);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			font-size: 0.9rem;
+			flex-shrink: 0;
+		}
+
+		.provider-config-btn:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		/* Modal overlay */
+		.modal-overlay {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 1000;
+			align-items: center;
+			justify-content: center;
+			padding: 1rem;
+		}
+
+		.modal-overlay.visible {
+			display: flex;
+		}
+
+		.modal-content {
+			background: var(--color-section-bg);
+			border-radius: 0.5rem;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+			max-width: 400px;
+			width: 100%;
+			max-height: 90vh;
+			overflow: auto;
+		}
+
+		.modal-header {
+			padding: 1rem;
+			border-bottom: 1px solid var(--color-divider);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.modal-header h2 {
+			margin: 0;
+			font-size: 1.1rem;
+		}
+
+		.modal-close {
+			background: none;
+			border: none;
+			font-size: 1.5rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			padding: 0;
+			line-height: 1;
+		}
+
+		.modal-close:hover {
+			color: var(--color-text);
+		}
+
+		.modal-body {
+			padding: 1rem;
+		}
+
+		.modal-footer {
+			padding: 1rem;
+			border-top: 1px solid var(--color-divider);
+			display: flex;
+			gap: 0.5rem;
+			justify-content: flex-end;
+		}
+
+		.api-key-input-group {
+			display: flex;
+			gap: 0.5rem;
+		}
+
+		.api-key-input-group input {
+			flex: 1;
+		}
+
+		.toggle-visibility-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2.5rem;
+			background: var(--color-section-header);
+			border: 1px solid var(--color-divider);
+			border-radius: 0.25rem;
+			cursor: pointer;
+			color: var(--color-text-muted);
+			flex-shrink: 0;
+		}
+
+		.toggle-visibility-btn:hover {
+			background: var(--color-accent);
+			color: #fff;
+			border-color: var(--color-accent);
+		}
+
+		.form-check-input:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.api-key-hint {
+			font-size: 0.8rem;
+			color: var(--color-text-muted);
+			margin-top: 0.5rem;
+		}
+
+		.api-key-hint a {
+			color: var(--color-accent);
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<div class="page-header">
+		<h1>Multi Weather</h1>
+		<p>Made with <span class="heart">♥</span> by Skylar Sadlier</p>
+		<a href="https://ko-fi.com/B0B51BM7C" target="_blank"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Buy me a coffee"></a>
+	</div>
+
+	<div id="alert-container"></div>
+
+	<div class="section">
+		<div class="section-header">Weather Providers</div>
+		<div class="section-body">
+			<p class="form-text">Enabled providers appear in the app. Drag handles to set the main menu order.</p>
+			<p class="form-text bridge-only">Test asks a provider for the weather where your watch is, so you can see it works there before saving.</p>
+			<ul id="providers-sortable" class="list-group"></ul>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Quick Glance</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="quick-glance">Main Menu Subtitle</label>
+				<select id="quick-glance" class="form-select">
+					<option value="temperature">Temperature</option>
+					<option value="humidity">Humidity</option>
+					<option value="wind">Wind Speed</option>
+					<option value="forecast">Forecast</option>
+					<option value="custom_template">Custom Template</option>
+				</select>
+				<p class="form-text">Choose what information displays below each provider name.</p>
+			</div>
+			<div id="custom-template-group">
+				<label class="form-label" for="custom-template">Template</label>
+				<input type="text" id="custom-template" class="form-input" placeholder="{temp} H:{temp_high} L:{temp_low}">
+				<div class="template-help">
+					<div class="template-help-title">Available Variables (click to insert)</div>
+					<div class="template-section">
+						<div class="template-section-title">Temperature</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{temp}">{temp}</a>
+							<a href="#" class="template-var" data-var="{temp_f}">{temp_f}</a>
+							<a href="#" class="template-var" data-var="{temp_c}">{temp_c}</a>
+							<a href="#" class="template-var" data-var="{temp_high}">{temp_high}</a>
+							<a href="#" class="template-var" data-var="{temp_low}">{temp_low}</a>
+							<a href="#" class="template-var" data-var="{temp_f_high}">{temp_f_high}</a>
+							<a href="#" class="template-var" data-var="{temp_f_low}">{temp_f_low}</a>
+							<a href="#" class="template-var" data-var="{temp_c_high}">{temp_c_high}</a>
+							<a href="#" class="template-var" data-var="{temp_c_low}">{temp_c_low}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Wind</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{windspeed}">{windspeed}</a>
+							<a href="#" class="template-var" data-var="{windspeed_mph}">{windspeed_mph}</a>
+							<a href="#" class="template-var" data-var="{windspeed_kph}">{windspeed_kph}</a>
+							<a href="#" class="template-var" data-var="{wind_direction}">{wind_direction}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Conditions</div>
+						<div class="template-vars">
+							<a href="#" class="template-var" data-var="{humidity}">{humidity}</a>
+							<a href="#" class="template-var" data-var="{conditions}">{conditions}</a>
+							<a href="#" class="template-var" data-var="{forecast}">{forecast}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Detailed Forecast</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="detailed-forecast-subtitle">Forecast List Subtitle</label>
+				<select id="detailed-forecast-subtitle" class="form-select">
+					<option value="short_forecast">Short Forecast</option>
+					<option value="long_forecast">Long Forecast</option>
+					<option value="short_forecast_temp">Short Forecast + High/Low</option>
+					<option value="high_low_temp">High/Low Temperature</option>
+					<option value="wind">Wind</option>
+					<option value="custom_template">Custom Template</option>
+				</select>
+				<p class="form-text">Choose what information displays below each forecast period. High/Low temp requires hourly data coverage for the period.</p>
+			</div>
+			<div id="forecast-subtitle-template-group">
+				<label class="form-label" for="forecast-subtitle-template">Template</label>
+				<input type="text" id="forecast-subtitle-template" class="form-input" placeholder="{temp} {temp_high} / {temp_low} {precip}">
+				<div class="template-help">
+					<div class="template-help-title">Available Variables (click to insert)</div>
+					<div class="template-section">
+						<div class="template-section-title">Temperature</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{temp}">{temp}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f}">{temp_f}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c}">{temp_c}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_high}">{temp_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_low}">{temp_low}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f_high}">{temp_f_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_f_low}">{temp_f_low}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c_high}">{temp_c_high}</a>
+							<a href="#" class="forecast-template-var" data-var="{temp_c_low}">{temp_c_low}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Wind</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{wind}">{wind}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed}">{windspeed}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed_mph}">{windspeed_mph}</a>
+							<a href="#" class="forecast-template-var" data-var="{windspeed_kph}">{windspeed_kph}</a>
+							<a href="#" class="forecast-template-var" data-var="{wind_direction}">{wind_direction}</a>
+						</div>
+					</div>
+					<div class="template-section">
+						<div class="template-section-title">Forecast</div>
+						<div class="template-vars">
+							<a href="#" class="forecast-template-var" data-var="{short_forecast}">{short_forecast}</a>
+							<a href="#" class="forecast-template-var" data-var="{long_forecast}">{long_forecast}</a>
+							<a href="#" class="forecast-template-var" data-var="{precip}">{precip}</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Units</div>
+		<div class="section-body">
+			<div class="form-group">
+				<label class="form-label" for="time-format">Time Format</label>
+				<select id="time-format" class="form-select">
+					<option value="12h">12-hour (5PM)</option>
+					<option value="24h">24-hour (17:00)</option>
+				</select>
+			</div>
+			<div class="form-group" style="margin-bottom: 0;">
+				<label class="form-label" for="temp-unit">Temperature</label>
+				<select id="temp-unit" class="form-select">
+					<option value="F">Fahrenheit (°F)</option>
+					<option value="C">Celsius (°C)</option>
+				</select>
+			</div>
+			<div class="form-switch" style="padding-bottom:0">
+				<label class="form-check-label" for="temp-show-both">Show both temperature units</label>
+				<input type="checkbox" id="temp-show-both">
+			</div>
+			<p class="form-text" style="margin-top:0;">When enabled, displays both °F and °C values.</p>
+			<div class="form-group">
+				<label class="form-label" for="speed-unit">Wind Speed</label>
+				<select id="speed-unit" class="form-select">
+					<option value="mph">Miles per hour (mph)</option>
+					<option value="kmh">Kilometers per hour (km/h)</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Menu Appearance</div>
+		<div class="section-body">
+			<p class="form-text">Choose the menu background color. Sun Based switches between white (day) and black (night).</p>
+			<div class="form-group">
+				<label class="form-label" for="menu-background">Menu Background</label>
+				<select id="menu-background" class="form-select">
+					<option value="sun">Sun Based</option>
+					<option value="black">Black</option>
+					<option value="white">White</option>
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<div class="section">
+		<div class="section-header">Touch</div>
+		<div class="section-body">
+			<div class="form-switch" style="padding-bottom:0">
+				<label class="form-check-label" for="touch-enabled">Touch Input</label>
+				<input type="checkbox" id="touch-enabled" checked>
+			</div>
+			<p class="form-text" style="margin-top:0;">Tap to select, slide to scroll, hold for a long press, and swipe right to go back on watches with a touchscreen.</p>
+			<div id="touch-long-press-wrap">
+				<div class="form-switch" style="padding-bottom:0">
+					<label class="form-check-label" for="touch-long-press">Touch Long Press Actions</label>
+					<input type="checkbox" id="touch-long-press" checked>
+				</div>
+				<p class="form-text" style="margin-top:0;">Holding a finger on an item acts like holding the select button. Disable to use touch for navigation only.</p>
+			</div>
+		</div>
+	</div>
+
+	<div class="save-container">
+		<button type="button" class="btn btn-primary" id="save-btn">Save</button>
+		<p class="form-text bridge-only" style="text-align:center;">Saves to the watch and stays on this page</p>
+	</div>
+</div>
+
+<!-- API Key Configuration Modal -->
+<div class="modal-overlay" id="api-key-modal">
+	<div class="modal-content">
+		<div class="modal-header">
+			<h2 id="modal-title">Configure API Key</h2>
+			<button type="button" class="modal-close" id="modal-close">&times;</button>
+		</div>
+		<div class="modal-body">
+			<div class="form-group">
+				<label class="form-label" for="api-key-input">API Key</label>
+				<div class="api-key-input-group">
+					<input type="password" id="api-key-input" class="form-input" placeholder="Enter your API key">
+					<button type="button" class="toggle-visibility-btn" id="toggle-api-key-visibility" aria-label="Show key">
+						<svg class="icon"><use href="#icon-eye"/></svg>
+					</button>
+				</div>
+				<p class="api-key-hint" id="api-key-hint">
+					Get your API key from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a>. Requires One Call API 3.0 subscription.
+				</p>
+				<p class="api-key-hint bridge-only">The key is checked with the provider before it is saved.</p>
+				<div class="modal-result" id="modal-result"></div>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+			<button type="button" class="btn btn-primary" id="modal-save">Save</button>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+(function() {
+	'use strict';
+
+	var PROVIDERS = [
+		{ id: 'nws', name: 'NWS', desc: 'National Weather Service (US only)' },
+		{ id: 'openmeteo', name: 'Open-Meteo', desc: 'Global forecast model' },
+		{ id: 'metno', name: 'Meteorologisk institutt', desc: 'MET Norway global forecast' },
+		{ id: 'openweather', name: 'OpenWeatherMap', desc: 'Requires API key (paid)', requiresApiKey: true, apiKeySettingName: 'openweather_api_key' },
+		{ id: 'weatherapi', name: 'WeatherAPI.com', desc: 'Requires API key (free tier available)', requiresApiKey: true, apiKeySettingName: 'weatherapi_api_key' }
+	];
+
+	// Store for API keys
+	var apiKeys = {};
+
+	var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
+	var DEFAULT_FORECAST_SUBTITLE_TEMPLATE = '{temp} {temp_high} / {temp_low} {precip}';
+
+	// ===== Helpers ==========================================================
+
+	function $(id) {
+		return document.getElementById(id);
+	}
+
+	function esc(value) {
+		return String(value === null || value === undefined ? '' : value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#39;');
+	}
+
+	function icon(name) {
+		return '<svg class="icon" aria-hidden="true"><use href="#' + name + '"/></svg>';
+	}
+
+	function listItems(list) {
+		return Array.prototype.slice.call(list.children);
+	}
+
+	function findProvider(providerId) {
+		for (var i = 0; i < PROVIDERS.length; i++) {
+			if (PROVIDERS[i].id === providerId) {
+				return PROVIDERS[i];
+			}
+		}
+		return null;
+	}
+
+	function providerRow(providerId) {
+		return document.querySelector('#providers-sortable li[data-id="' + providerId + '"]');
+	}
+
+	var alertContainer = $('alert-container');
+
+	function display_alert(type, content) {
+		if (!type && !content) {
+			alertContainer.innerHTML = '';
+			return;
+		}
+		alertContainer.innerHTML = '<div class="alert alert-' + esc(type) + '" role="alert">' + content + '</div>';
+	}
+
+	// ===== Transport ========================================================
+	//
+	// With the watch app on the line, requests are `{ type, ... }` objects and
+	// replies `{ ok: true, ... }` or `{ ok: false, error: { code, message } }`.
+	// The phone answers for the watch app when it cannot be reached, with a
+	// bare `{ error: "..." }`, which is folded into the same shape here.
+
+	var bridge = (typeof Pebble !== 'undefined' && Pebble &&
+		typeof Pebble.sendMessage === 'function' &&
+		typeof Pebble.addEventListener === 'function') ? Pebble : null;
+
+	function request(message) {
+		return bridge.sendMessage('pkjs', message).then(function(reply) {
+			if (!reply || typeof reply !== 'object') {
+				return { ok: false, error: { code: 'bad_reply', message: 'No reply from the watch app' } };
+			}
+			if (reply.ok === undefined && reply.error !== undefined) {
+				return { ok: false, error: { code: 'host', message: String(reply.error) } };
+			}
+			if (!reply.ok && (!reply.error || typeof reply.error !== 'object')) {
+				return { ok: false, error: { code: 'bad_reply', message: 'The watch app sent an unexpected reply' } };
+			}
+			return reply;
+		}, function(err) {
+			return { ok: false, error: { code: 'send_failed', message: String((err && err.message) || err) } };
+		});
+	}
+
+	// ===== Providers list ===================================================
+
+	function setCheckboxForKey(checkbox, provider, enabled) {
+		var hasApiKey = !!(apiKeys[provider.apiKeySettingName] && apiKeys[provider.apiKeySettingName].length > 0);
+		checkbox.disabled = !hasApiKey;
+		checkbox.checked = hasApiKey && enabled;
+	}
+
+	function buildProviderList(order, enabledMap) {
+		var list = $('providers-sortable');
+		list.innerHTML = '';
+
+		order.forEach(function(provider) {
+			var li = document.createElement('li');
+			li.className = 'list-group-item';
+			li.setAttribute('data-id', provider.id);
+
+			var handle = document.createElement('span');
+			handle.className = 'drag-handle';
+			handle.setAttribute('aria-label', 'Drag to reorder');
+			handle.innerHTML = icon('icon-grip');
+			li.appendChild(handle);
+
+			var info = document.createElement('div');
+			info.className = 'provider-info';
+
+			var name = document.createElement('div');
+			name.className = 'provider-name';
+			name.textContent = provider.name;
+
+			var desc = document.createElement('div');
+			desc.className = 'provider-desc';
+			desc.textContent = provider.desc || '';
+
+			// Only filled in with the watch app on the line
+			var status = document.createElement('div');
+			status.className = 'provider-status bridge-only';
+
+			var statusText = document.createElement('span');
+			statusText.className = 'provider-status-text';
+
+			var testBtn = document.createElement('button');
+			testBtn.type = 'button';
+			testBtn.className = 'link-btn provider-test-btn';
+			testBtn.textContent = 'Test';
+			testBtn.addEventListener('click', function() {
+				testProviderRow(provider.id);
+			});
+
+			status.appendChild(testBtn);
+			status.appendChild(document.createTextNode(' '));
+			status.appendChild(statusText);
+
+			info.appendChild(name);
+			info.appendChild(desc);
+			info.appendChild(status);
+			li.appendChild(info);
+
+			// Add config button for providers that require API key
+			if (provider.requiresApiKey) {
+				var configBtn = document.createElement('button');
+				configBtn.type = 'button';
+				configBtn.className = 'provider-config-btn';
+				configBtn.setAttribute('aria-label', 'Configure ' + provider.name);
+				configBtn.innerHTML = icon('icon-gear');
+				configBtn.addEventListener('click', function(e) {
+					e.stopPropagation();
+					openApiKeyModal(provider.id);
+				});
+				li.appendChild(configBtn);
+			}
+
+			var checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.className = 'form-check-input';
+			checkbox.setAttribute('data-provider', provider.id);
+
+			// Providers requiring an API key stay off, and cannot be switched
+			// on, until a key is set
+			if (provider.requiresApiKey) {
+				setCheckboxForKey(checkbox, provider,
+					enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : false);
+			} else {
+				checkbox.checked = enabledMap.hasOwnProperty(provider.id) ? !!enabledMap[provider.id] : true;
+			}
+
+			li.appendChild(checkbox);
+			list.appendChild(li);
+		});
+
+		makeSortable(list);
+		if (lastStatus) { applyStatus(lastStatus); }
+	}
+
+	// Rows are dragged by their handle. Pointer events give one path for mouse
+	// and touch, and capturing the pointer on the handle keeps the moves coming
+	// after the finger has left it. The row follows the pointer by being moved
+	// in the list itself, so there is nothing to clean up at the end.
+	function makeSortable(list) {
+		if (list.dataset.sortable) { return; }
+		list.dataset.sortable = 'true';
+
+		list.addEventListener('pointerdown', function(e) {
+			// Only the main button or first finger drags
+			if (e.button !== 0 || e.isPrimary === false) { return; }
+			var handle = e.target.closest ? e.target.closest('.drag-handle') : null;
+			if (!handle) { return; }
+			var item = handle.closest('li');
+			if (!item || item.parentNode !== list) { return; }
+			e.preventDefault();
+
+			var pointerId = e.pointerId;
+			item.classList.add('dragging');
+			try { handle.setPointerCapture(pointerId); } catch (err) { /* older webview */ }
+
+			function place(y) {
+				var siblings = listItems(list);
+				var next = null;
+				for (var i = 0; i < siblings.length; i++) {
+					if (siblings[i] === item) { continue; }
+					var rect = siblings[i].getBoundingClientRect();
+					if (y < rect.top + rect.height / 2) {
+						next = siblings[i];
+						break;
+					}
+				}
+				if (next) {
+					if (item.nextElementSibling !== next) { list.insertBefore(item, next); }
+				} else if (list.lastElementChild !== item) {
+					list.appendChild(item);
+				}
+
+				// Keep the page moving when the row is dragged to its edge
+				var margin = 48;
+				if (y < margin) {
+					window.scrollBy(0, -12);
+				} else if (y > window.innerHeight - margin) {
+					window.scrollBy(0, 12);
+				}
+			}
+
+			function onMove(ev) {
+				if (ev.pointerId !== pointerId) { return; }
+				ev.preventDefault();
+				place(ev.clientY);
+			}
+
+			function onEnd(ev) {
+				if (ev.pointerId !== pointerId) { return; }
+				document.removeEventListener('pointermove', onMove);
+				document.removeEventListener('pointerup', onEnd);
+				document.removeEventListener('pointercancel', onEnd);
+				item.classList.remove('dragging');
+			}
+
+			document.addEventListener('pointermove', onMove);
+			document.addEventListener('pointerup', onEnd);
+			document.addEventListener('pointercancel', onEnd);
+		});
+	}
+
+	function getSortedProviders() {
+		var ordered = [];
+		var enabled = {};
+		listItems($('providers-sortable')).forEach(function(li) {
+			var id = li.getAttribute('data-id');
+			ordered.push(id);
+			enabled[id] = li.querySelector('input[type="checkbox"]').checked;
+		});
+		return { order: ordered, enabled: enabled };
+	}
+
+	// ===== Provider status and tests (bridge) ===============================
+
+	var lastStatus = null;
+
+	function setRowStatus(providerId, cls, text) {
+		var row = providerRow(providerId);
+		if (!row) { return; }
+		var status = row.querySelector('.provider-status');
+		status.className = 'provider-status bridge-only' + (cls ? ' ' + cls : '');
+		status.querySelector('.provider-status-text').textContent = text;
+	}
+
+	function setRowTesting(providerId, testing) {
+		var row = providerRow(providerId);
+		if (!row) { return; }
+		var btn = row.querySelector('.provider-test-btn');
+		btn.disabled = testing;
+		btn.textContent = testing ? 'Testing…' : 'Test';
+	}
+
+	// What the watch last got from a provider, or null to leave the line as
+	// it is (a test result stays up until there is something newer to say)
+	function describeProvider(provider, p) {
+		if (!p) { return null; }
+		switch (p.state) {
+			case 'loading':
+				return { cls: '', text: 'Fetching…' };
+			case 'loaded':
+				return { cls: 'ok', text: 'Working' + (p.summary ? ': ' + p.summary : '') };
+			case 'unavailable':
+				return { cls: 'error', text: (p.error && p.error.detail) || 'Not available where you are' };
+			case 'error':
+				return { cls: 'error', text: p.error
+					? [p.error.title, p.error.detail].filter(Boolean).join(': ')
+					: 'Could not load the weather' };
+			default:
+				if (provider.requiresApiKey && !p.has_key) {
+					return { cls: '', text: 'Needs an API key' };
+				}
+				return null;
+		}
+	}
+
+	function applyStatus(status) {
+		lastStatus = status || null;
+		if (!status || !status.providers) { return; }
+		PROVIDERS.forEach(function(provider) {
+			var described = describeProvider(provider, status.providers[provider.id]);
+			if (described) {
+				setRowStatus(provider.id, described.cls, described.text);
+			}
+		});
+	}
+
+	function testProviderRow(providerId) {
+		var provider = findProvider(providerId);
+		if (provider.requiresApiKey && !apiKeys[provider.apiKeySettingName]) {
+			openApiKeyModal(providerId);
+			return;
+		}
+		if (!provider.requiresApiKey && lastStatus && lastStatus.has_location === false) {
+			setRowStatus(providerId, 'error', 'The watch does not know where it is yet. Try again in a moment.');
+			return;
+		}
+
+		setRowTesting(providerId, true);
+		setRowStatus(providerId, '', provider.requiresApiKey ? 'Checking the key…' : 'Asking for the weather where you are…');
+		// A keyed provider is tested with the key the watch has
+		request({ type: 'test_provider', provider: providerId }).then(function(reply) {
+			setRowTesting(providerId, false);
+			if (!reply.ok) {
+				setRowStatus(providerId, 'error', reply.error.message);
+				return;
+			}
+			if (provider.requiresApiKey) {
+				setRowStatus(providerId, 'ok', 'The key works');
+			} else {
+				setRowStatus(providerId, 'ok', 'Working' +
+					(reply.location ? ' for ' + reply.location : '') +
+					(reply.summary ? ': ' + reply.summary : ''));
+			}
+		});
+	}
+
+	// ===== API key modal ====================================================
+
+	// Current provider being configured
+	var currentConfigProvider = null;
+
+	function openApiKeyModal(providerId) {
+		var provider = findProvider(providerId);
+		if (!provider) return;
+
+		currentConfigProvider = provider;
+
+		// Set modal title
+		$('modal-title').textContent = 'Configure ' + provider.name;
+
+		// Set current API key value
+		var apiKeyInput = $('api-key-input');
+		apiKeyInput.value = apiKeys[provider.apiKeySettingName] || '';
+		apiKeyInput.type = 'password';
+
+		// Reset visibility button
+		$('toggle-api-key-visibility').innerHTML = icon('icon-eye');
+		$('modal-result').innerHTML = '';
+		$('modal-save').disabled = false;
+		$('modal-save').textContent = bridge ? 'Check & Save' : 'Save';
+
+		// Set appropriate API key hint based on provider
+		var hintEl = $('api-key-hint');
+		if (providerId === 'openweather') {
+			hintEl.innerHTML = 'Get your API key from <a href="https://openweathermap.org/api" target="_blank">OpenWeatherMap</a>. Requires One Call API 3.0 subscription.';
+		} else if (providerId === 'weatherapi') {
+			hintEl.innerHTML = 'Get your free API key from <a href="https://www.weatherapi.com/signup.aspx" target="_blank">WeatherAPI.com</a>. Free tier: 1M calls/month.';
+		} else {
+			hintEl.textContent = 'Enter your API key for ' + provider.name + '.';
+		}
+
+		// Show modal
+		$('api-key-modal').classList.add('visible');
+	}
+
+	function closeApiKeyModal() {
+		$('api-key-modal').classList.remove('visible');
+		currentConfigProvider = null;
+	}
+
+	function toggleApiKeyVisibility() {
+		var input = $('api-key-input');
+		var btn = $('toggle-api-key-visibility');
+		if (input.type === 'password') {
+			input.type = 'text';
+			btn.innerHTML = icon('icon-eye-slash');
+			btn.setAttribute('aria-label', 'Hide key');
+		} else {
+			input.type = 'password';
+			btn.innerHTML = icon('icon-eye');
+			btn.setAttribute('aria-label', 'Show key');
+		}
+	}
+
+	// Take a key into the form. A key that has just been checked switches the
+	// provider on, since that is what the watch did with it.
+	function useApiKey(provider, apiKey, switchOn) {
+		apiKeys[provider.apiKeySettingName] = apiKey;
+		var checkbox = document.querySelector('input[data-provider="' + provider.id + '"]');
+		if (checkbox) {
+			setCheckboxForKey(checkbox, provider, switchOn || checkbox.checked);
+		}
+	}
+
+	function saveApiKey() {
+		var provider = currentConfigProvider;
+		if (!provider) return;
+
+		var apiKey = $('api-key-input').value.trim();
+
+		// Without the watch app, or to clear a key, the key just goes into
+		// the form and is kept when the page is saved
+		if (!bridge || !apiKey) {
+			useApiKey(provider, apiKey, false);
+			closeApiKeyModal();
+			return;
+		}
+
+		// With the watch app on the line the key is checked first, and the
+		// watch keeps it only if the provider accepts it
+		var saveBtn = $('modal-save');
+		saveBtn.disabled = true;
+		saveBtn.textContent = 'Checking…';
+		$('modal-result').innerHTML = '';
+		request({ type: 'test_provider', provider: provider.id, api_key: apiKey }).then(function(reply) {
+			saveBtn.disabled = false;
+			saveBtn.textContent = 'Check & Save';
+			// The modal may have been closed, or opened for another provider,
+			// while the check ran
+			if (currentConfigProvider !== provider) { return; }
+			if (!reply.ok) {
+				$('modal-result').innerHTML = '<div class="alert alert-danger" role="alert"><strong>Not saved.</strong> ' +
+					esc(reply.error.message) + '</div>';
+				return;
+			}
+			useApiKey(provider, apiKey, true);
+			setRowStatus(provider.id, 'ok', 'The key works and is saved on the watch');
+			closeApiKeyModal();
+		});
+	}
+
+	function initModalHandlers() {
+		$('modal-close').addEventListener('click', closeApiKeyModal);
+		$('modal-cancel').addEventListener('click', closeApiKeyModal);
+		$('modal-save').addEventListener('click', saveApiKey);
+		$('toggle-api-key-visibility').addEventListener('click', toggleApiKeyVisibility);
+
+		// Close on overlay click
+		$('api-key-modal').addEventListener('click', function(e) {
+			if (e.target === this) {
+				closeApiKeyModal();
+			}
+		});
+	}
+
+	// ===== Templates ========================================================
+
+	function toggleCustomTemplate() {
+		$('custom-template-group').classList.toggle('visible', $('quick-glance').value === 'custom_template');
+	}
+
+	function toggleForecastSubtitleTemplate() {
+		$('forecast-subtitle-template-group').classList.toggle('visible',
+			$('detailed-forecast-subtitle').value === 'custom_template');
+	}
+
+	function initTemplateVars(selector, input) {
+		var vars = document.querySelectorAll(selector);
+		for (var i = 0; i < vars.length; i++) {
+			vars[i].addEventListener('click', function(e) {
+				e.preventDefault();
+				var varText = this.getAttribute('data-var');
+				var cursorPos = input.selectionStart;
+				var textBefore = input.value.substring(0, cursorPos);
+				var textAfter = input.value.substring(cursorPos);
+				input.value = textBefore + varText + textAfter;
+				input.focus();
+				input.selectionStart = input.selectionEnd = cursorPos + varText.length;
+			});
+		}
+	}
+
+	// Touch long press only means something while touch is on, so it is
+	// hidden otherwise
+	function toggleTouchLongPress() {
+		$('touch-long-press-wrap').style.display = $('touch-enabled').checked ? '' : 'none';
+	}
+
+	// ===== Form =============================================================
+
+	function populateForm(options) {
+		options = options || {};
+		var order = Array.isArray(options.provider_order) ? options.provider_order.slice() : [];
+		var enabledMap = options.provider_enabled && typeof options.provider_enabled === 'object'
+			? options.provider_enabled
+			: {};
+		var tempShowBoth = options.temperature_show_both;
+		if (tempShowBoth === undefined || tempShowBoth === null) {
+			tempShowBoth = true;
+		}
+
+		// Load API keys from options
+		PROVIDERS.forEach(function(provider) {
+			if (provider.requiresApiKey && provider.apiKeySettingName) {
+				apiKeys[provider.apiKeySettingName] = options[provider.apiKeySettingName] || '';
+			}
+		});
+
+		// The saved order first, then any provider it does not know about
+		var orderedProviders = [];
+		order.forEach(function(providerId) {
+			var provider = findProvider(providerId);
+			if (provider && orderedProviders.indexOf(provider) === -1) {
+				orderedProviders.push(provider);
+			}
+		});
+		PROVIDERS.forEach(function(provider) {
+			if (orderedProviders.indexOf(provider) === -1) {
+				orderedProviders.push(provider);
+			}
+		});
+
+		buildProviderList(orderedProviders, enabledMap);
+
+		$('quick-glance').value = options.quick_glance || 'temperature';
+		$('custom-template').value = options.custom_template || DEFAULT_CUSTOM_TEMPLATE;
+		$('temp-unit').value = options.temperature_unit || 'F';
+		$('speed-unit').value = options.speed_unit || 'mph';
+		$('time-format').value = options.time_format || '12h';
+		$('temp-show-both').checked = !!tempShowBoth;
+		$('menu-background').value = options.menu_background_mode || 'sun';
+		$('touch-enabled').checked = options.touch_enabled !== false;
+		$('touch-long-press').checked = options.touch_long_press !== false;
+		$('detailed-forecast-subtitle').value = options.detailed_forecast_subtitle || 'short_forecast';
+		$('forecast-subtitle-template').value = options.detailed_forecast_subtitle_template || DEFAULT_FORECAST_SUBTITLE_TEMPLATE;
+
+		toggleCustomTemplate();
+		toggleForecastSubtitleTemplate();
+		toggleTouchLongPress();
+	}
+
+	function getFormValues() {
+		var result = getSortedProviders();
+		var payload = {
+			provider_order: result.order,
+			provider_enabled: result.enabled,
+			quick_glance: $('quick-glance').value,
+			custom_template: $('custom-template').value || DEFAULT_CUSTOM_TEMPLATE,
+			temperature_unit: $('temp-unit').value,
+			speed_unit: $('speed-unit').value,
+			time_format: $('time-format').value,
+			temperature_show_both: $('temp-show-both').checked,
+			menu_background_mode: $('menu-background').value,
+			touch_enabled: $('touch-enabled').checked,
+			touch_long_press: $('touch-long-press').checked,
+			detailed_forecast_subtitle: $('detailed-forecast-subtitle').value,
+			detailed_forecast_subtitle_template: $('forecast-subtitle-template').value || DEFAULT_FORECAST_SUBTITLE_TEMPLATE
+		};
+
+		// Add API keys to payload
+		for (var key in apiKeys) {
+			if (apiKeys.hasOwnProperty(key)) {
+				payload[key] = apiKeys[key];
+			}
+		}
+		return payload;
+	}
+
+	// ===== Saving ===========================================================
+
+	var saveBtn = $('save-btn');
+
+	// Classic flow: hand the settings back through the close URL, which shuts
+	// the page. The emulator asks for them at a return_to URL instead.
+	function saveLegacy(values) {
+		var returnTo = null;
+		var match = /[?&]return_to=([^&#]*)/.exec(window.location.search);
+		if (match) {
+			returnTo = decodeURIComponent(match[1]);
+		}
+		var configData = encodeURIComponent(JSON.stringify(values));
+		window.location.href = (returnTo || 'pebblejs://close#') + configData;
+	}
+
+	// Bundled flow: the watch app stores them, and the page stays put
+	function saveOverBridge(values) {
+		saveBtn.disabled = true;
+		saveBtn.textContent = 'Saving…';
+		request({ type: 'save_settings', settings: values }).then(function(reply) {
+			saveBtn.disabled = false;
+			saveBtn.textContent = 'Save';
+			if (!reply.ok) {
+				display_alert('danger', '<strong>Not saved.</strong> ' + esc(reply.error.message));
+			} else {
+				display_alert('success', '<strong>Saved.</strong> The watch is refreshing the weather with your settings.');
+			}
+			alertContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		});
+	}
+
+	function onSave() {
+		var values = getFormValues();
+		if (bridge) {
+			saveOverBridge(values);
+		} else {
+			saveLegacy(values);
+		}
+	}
+
+	// ===== Loading ==========================================================
+
+	function loadFromHash() {
+		var options = {};
+		var hash = window.location.hash;
+		if (hash && hash.length > 1) {
+			try {
+				options = JSON.parse(decodeURIComponent(hash.substring(1))) || {};
+			} catch (e) {
+				options = {};
+			}
+		}
+		populateForm(options);
+	}
+
+	// The watch app registers its handler as it starts, and the phone opens
+	// this page as soon as the app is running, so the first ask can land before
+	// the handler is there. The phone answers for it then; ask again, for a
+	// while. An app that is there but never answers is not worth waiting on.
+	var LOAD_RETRY_WINDOW_MS = 15000;
+	var LOAD_RETRY_MS = 700;
+
+	function loadFromWatch(startedAt) {
+		startedAt = startedAt || Date.now();
+		display_alert('info', 'Loading your settings from the watch…');
+		request({ type: 'get_settings' }).then(function(reply) {
+			if (!reply.ok) {
+				var retryable = (reply.error.code === 'host' || reply.error.code === 'send_failed') &&
+					reply.error.message.indexOf('did not answer') === -1;
+				if (retryable && Date.now() - startedAt < LOAD_RETRY_WINDOW_MS) {
+					setTimeout(function() { loadFromWatch(startedAt); }, LOAD_RETRY_MS);
+					return;
+				}
+				display_alert('danger', '<strong>Could not reach the watch app.</strong> ' +
+					esc(reply.error.message) + '. Make sure Multi Weather is open on the watch. ' +
+					'<a href="#" id="retry-load">Try again</a>');
+				$('retry-load').addEventListener('click', function(e) {
+					e.preventDefault();
+					loadFromWatch();
+				});
+				return;
+			}
+			display_alert();
+			lastStatus = reply.status || null;
+			populateForm(reply.settings || {});
+			saveBtn.disabled = false;
+		});
+	}
+
+	function startOverBridge() {
+		document.documentElement.classList.add('has-bridge');
+		saveBtn.disabled = true;
+		display_alert('info', 'Waiting for the watch app…');
+
+		bridge.addEventListener('message', function(e) {
+			var data = e && e.data;
+			if (!data || data.type !== 'status') { return; }
+			applyStatus(data.status);
+		});
+
+		var started = false;
+		bridge.addEventListener('ready', function(e) {
+			if (e.target !== 'pkjs' || started) { return; }
+			started = true;
+			loadFromWatch();
+		});
+
+		// The phone only says the watch app is ready once it is running
+		setTimeout(function() {
+			if (!started) {
+				display_alert('warning', '<strong>Still waiting for the watch app.</strong> ' +
+					'Make sure Multi Weather is open on the watch.');
+			}
+		}, 15000);
+	}
+
+	// ===== Start ============================================================
+
+	$('quick-glance').addEventListener('change', toggleCustomTemplate);
+	$('detailed-forecast-subtitle').addEventListener('change', toggleForecastSubtitleTemplate);
+	$('touch-enabled').addEventListener('change', toggleTouchLongPress);
+	initTemplateVars('.template-var', $('custom-template'));
+	initTemplateVars('.forecast-template-var', $('forecast-subtitle-template'));
+	initModalHandlers();
+	saveBtn.addEventListener('click', onSave);
+
+	try {
+		if (bridge) {
+			startOverBridge();
+		} else {
+			loadFromHash();
+		}
+	} catch (e) {
+		console.error('Error loading settings', e);
+	}
+})();
+</script>
+</body>
+</html>
