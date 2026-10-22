@@ -164,6 +164,8 @@ class MetNoService extends WeatherService {
     _buildDailyForecast(timeseries) {
         var dayMap = {};
         var order = [];
+        // Rain is added up hour by hour, and each hour only once
+        var precipitationCoveredUntil = 0;
 
         for (var i = 0; i < timeseries.length; i++) {
             var entry = timeseries[i];
@@ -186,7 +188,7 @@ class MetNoService extends WeatherService {
                     windSpeed: null,
                     windGust: null,
                     windDirection: null,
-                    maxPrecipitation: null,
+                    totalPrecipitation: null,
                     maxCloudCoverage: null,
                     avgVisibility: null,
                     visibilityCount: 0
@@ -218,9 +220,15 @@ class MetNoService extends WeatherService {
                 }
             }
 
-            var precipAmount = this._getPrecipitation(entry);
-            if (precipAmount !== null && precipAmount !== undefined && !isNaN(precipAmount)) {
-                day.maxPrecipitation = (day.maxPrecipitation === null) ? precipAmount : Math.max(day.maxPrecipitation, precipAmount);
+            // Each step gives the amount over the next 1, 6 or 12 hours, and those
+            // windows overlap; adding up the ones that follow on from each other
+            // gives the day's total
+            if (time >= precipitationCoveredUntil) {
+                var precipWindow = this._getPrecipitationWindow(entry);
+                if (precipWindow) {
+                    day.totalPrecipitation = (day.totalPrecipitation || 0) + precipWindow.amount;
+                    precipitationCoveredUntil = time + precipWindow.hours * 60 * 60 * 1000;
+                }
             }
 
             var cloudCoverage = details.cloud_area_fraction;
@@ -270,8 +278,8 @@ class MetNoService extends WeatherService {
                 var windText = (day.windDirection || '') + ' ' + Math.round(day.windSpeed) + ' mph';
                 dailyDetails.push('Wind ' + windText.trim());
             }
-            if (day.maxPrecipitation !== null && day.maxPrecipitation > 0) {
-                dailyDetails.push(Math.round(day.maxPrecipitation * 10) / 10 + ' mm rain');
+            if (day.totalPrecipitation !== null && day.totalPrecipitation > 0) {
+                dailyDetails.push(Math.round(day.totalPrecipitation * 10) / 10 + ' mm rain');
             }
             if (day.maxCloudCoverage !== null) {
                 dailyDetails.push(Math.round(day.maxCloudCoverage) + '% cloud');
@@ -289,7 +297,7 @@ class MetNoService extends WeatherService {
                 temperatureTrend: null,
                 probabilityOfPrecipitation: {
                     unitCode: 'mm',
-                    value: day.maxPrecipitation !== null ? Math.round(day.maxPrecipitation * 10) / 10 : null
+                    value: day.totalPrecipitation !== null ? Math.round(day.totalPrecipitation * 10) / 10 : null
                 },
                 windSpeed: day.windSpeed,
                 windGust: day.windGust,
@@ -324,6 +332,25 @@ class MetNoService extends WeatherService {
         }
         if (entry.data.next_12_hours && entry.data.next_12_hours.summary) {
             return entry.data.next_12_hours.summary.symbol_code;
+        }
+        return null;
+    }
+
+    /**
+     * The precipitation forecast from a step: the amount, and how many hours
+     * it covers, from the shortest window the step has
+     */
+    _getPrecipitationWindow(entry) {
+        if (!entry || !entry.data) {
+            return null;
+        }
+        var windows = [['next_1_hours', 1], ['next_6_hours', 6], ['next_12_hours', 12]];
+        for (var i = 0; i < windows.length; i++) {
+            var next = entry.data[windows[i][0]];
+            var amount = next && next.details ? next.details.precipitation_amount : null;
+            if (amount !== null && amount !== undefined && !isNaN(amount)) {
+                return { amount: amount, hours: windows[i][1] };
+            }
         }
         return null;
     }
