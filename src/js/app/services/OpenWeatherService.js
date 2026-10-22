@@ -254,7 +254,13 @@ class OpenWeatherService extends WeatherService {
         for (var i = 0; i < daily.length; i++) {
             var day = daily[i];
             var weather = day.weather && day.weather[0] ? day.weather[0] : {};
-            var startTime = day.dt ? day.dt * 1000 : null;
+            // dt is midday; the day runs from the midnight before it
+            var startTime = null;
+            if (day.dt) {
+                var midnight = new Date(day.dt * 1000);
+                midnight.setHours(0, 0, 0, 0);
+                startTime = midnight.getTime();
+            }
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
 
             periods.push({
