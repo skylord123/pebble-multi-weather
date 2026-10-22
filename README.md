@@ -21,6 +21,7 @@ All of my projects are fully open-source and free — donations help cover time,
 - **Auto-Refresh** — Weather data updates automatically in the background
 - **Custom Templates** — Create your own format for Quick Glance (text under a provider's name on main menu) using variables like `{temp}`, `{humidity}`, `{conditions}`, etc
 - **Sun-based Theme** — Menu background changes automatically based on sunrise/sunset times (or you can force black/white always)
+- **Weather for other watchfaces** — With the Pebble app's experimental plugins switched on, any watchface or app that shows plugin weather can use Multi Weather's providers (see [src/plugin/README.md](src/plugin/README.md))
 
 ## Supported Providers
 

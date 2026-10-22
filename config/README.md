@@ -67,6 +67,16 @@ main menu subtitle once the weather has loaded. A push goes out when the watch
 gets its location and whenever a provider finishes loading, so the page's
 status lines follow the watch as it refreshes.
 
+## The weather plugin
+
+The pbw also carries a weather plugin (see `src/plugin/README.md`). Phone apps
+with plugins switched on start it while the page is open and fire `ready`
+with `{ target: 'plugin' }`. The page then shows that the weather is shared,
+and after saving, or after checking a new API key, sends it
+`Pebble.sendMessage('plugin', { type: 'refresh' })` so watchfaces showing its
+weather update straight away. The plugin answers `{ ok: true }`. Nothing is
+sent to it when it never said it was ready.
+
 ## Working on the page
 
 Open `config/v1.3.html` in a browser with the settings in the hash to work on
