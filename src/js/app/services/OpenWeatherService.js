@@ -47,6 +47,47 @@ class OpenWeatherService extends WeatherService {
         return this.baseUrl + '/onecall?' + params.join('&');
     }
 
+    /**
+     * Check an API key without storing it. Asks One Call 3.0 for the current
+     * conditions only, so a key without the One Call subscription fails here
+     * the same way it would on the watch.
+     * @param {string} apiKey - Key to try
+     * @param {number} latitude
+     * @param {number} longitude
+     * @param {Function} callback - Called with { ok: true } or { ok: false, error: { code, message } }
+     */
+    testApiKey(apiKey, latitude, longitude, callback) {
+        var params = [
+            'lat=' + latitude.toFixed(4),
+            'lon=' + longitude.toFixed(4),
+            'appid=' + encodeURIComponent(apiKey),
+            'exclude=minutely,hourly,daily,alerts'
+        ];
+
+        // Not logged: the URL carries the key
+        ajax({
+            url: this.baseUrl + '/onecall?' + params.join('&'),
+            type: 'json'
+        }, function() {
+            callback({ ok: true });
+        }, function(body, status) {
+            var message = body && typeof body === 'object' && body.message ? body.message : null;
+            if (status === 401) {
+                callback({ ok: false, error: { code: 'invalid_key',
+                    message: message || 'OpenWeatherMap did not accept this API key' } });
+            } else if (status === 429) {
+                callback({ ok: false, error: { code: 'rate_limited',
+                    message: message || 'Too many requests to OpenWeatherMap. Try again later.' } });
+            } else if (!status) {
+                callback({ ok: false, error: { code: 'unreachable',
+                    message: 'Could not reach OpenWeatherMap' } });
+            } else {
+                callback({ ok: false, error: { code: 'provider_error',
+                    message: message || 'OpenWeatherMap answered with HTTP ' + status } });
+            }
+        });
+    }
+
     fetchWeather(latitude, longitude, onSuccess, onError) {
         var self = this;
         var log = helpers.log;

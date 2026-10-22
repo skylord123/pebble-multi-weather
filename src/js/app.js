@@ -16,6 +16,7 @@ var AppState = require('app/AppState');
 var Constants = require('app/Constants');
 var helpers = require('app/helpers');
 var SettingsManager = require('app/SettingsManager');
+var ConfigBridge = require('app/ConfigBridge');
 var WeatherManager = require('app/services/WeatherManager');
 
 // === Page Imports ===
@@ -48,14 +49,35 @@ SettingsManager.load();
 WeatherManager.init();
 
 // === Settings Config Handler ===
+function onSettingsChanged() {
+    helpers.log('Settings changed, refreshing weather');
+    SettingsManager.load();
+    MainMenuPage.refreshTheme();
+    fetchLocationAndWeather();
+}
+
+/**
+ * Redraw everything showing a provider after it has new data or an error
+ */
+function onProviderUpdated(providerId) {
+    MainMenuPage.updateProvider(providerId);
+    if (providerMenuPages[providerId]) {
+        providerMenuPages[providerId].updateMenu();
+    }
+}
+
+// The hosted page, opened by every phone app that does not know about pages
+// bundled in the pbw
 SettingsManager.initConfigHandler({
     configPageUrl: Constants.CONFIG_PAGE_BASE_URL + Constants.CONFIG_PAGE_VERSION,
-    onSettingsChanged: function() {
-        helpers.log('Settings changed, refreshing weather');
-        SettingsManager.load();
-        MainMenuPage.refreshTheme();
-        fetchLocationAndWeather();
-    }
+    onSettingsChanged: onSettingsChanged
+});
+
+// The bundled page, which talks to this JS while it is open. Registers
+// nothing on a phone app that cannot open one.
+ConfigBridge.init({
+    onSettingsChanged: onSettingsChanged,
+    onProviderUpdated: onProviderUpdated
 });
 
 /**
@@ -83,12 +105,15 @@ function fetchLocationAndWeather() {
             SettingsManager.saveLocation(position.coords.latitude, position.coords.longitude);
 
             MainMenuPage.refreshTheme();
+            // An open config page can now test providers that need a location
+            ConfigBridge.notifyStatus();
             refreshWeather();
         },
         function(error) {
             log('GPS error: ' + error.message);
             // Update menu to show error
             MainMenuPage.updateAll();
+            ConfigBridge.notifyStatus();
         },
         locationOptions
     );
@@ -114,10 +139,8 @@ function refreshWeather() {
         },
         function(providerId, success) {
             log('Provider updated: ' + providerId + ' (success: ' + success + ')');
-            MainMenuPage.updateProvider(providerId);
-            if (providerMenuPages[providerId]) {
-                providerMenuPages[providerId].updateMenu();
-            }
+            onProviderUpdated(providerId);
+            ConfigBridge.notifyStatus();
         }
     );
 }
