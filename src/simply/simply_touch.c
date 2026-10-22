@@ -317,6 +317,11 @@ static void handle_touch(const TouchEvent *event, void *context) {
     }
   }
 
+  // Every message to the phone wakes it and holds up the next one, such as
+  // the select a tap just made, so touches only go when JS wants them
+  if (!s_touch->js_subscribed) {
+    return;
+  }
   if (event->type == TouchEvent_PositionUpdate && !s_touch->wants_moves) {
     return;
   }
@@ -345,11 +350,13 @@ static void handle_touch_config_packet(Simply *simply, Packet *data) {
   if (!simply->touch) {
     return;
   }
+  simply->touch->js_subscribed = packet->subscribed;
   simply->touch->wants_moves = packet->wants_moves;
   simply->touch->long_press = packet->long_press;
   // The user setting is the only thing that turns the sensor off:
   // `subscribed` reflects JS handler counts, but C-side consumers (menus,
-  // scrolling, swipe back) need the sensor regardless of what JS registered
+  // scrolling, swipe back) need the sensor regardless of what JS registered,
+  // so it only decides what is sent
   set_subscribe(simply->touch, packet->enabled);
 }
 
