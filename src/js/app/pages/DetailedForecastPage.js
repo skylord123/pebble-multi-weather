@@ -300,12 +300,12 @@ var DetailedForecastPage = {
     _formatHighLow: function(highLow, appState) {
         var unit = appState.temperatureUnit || 'F';
         var showBoth = appState.temperatureShowBoth;
-        var high = highLow.high;
-        var low = highLow.low;
+        var high = Math.round(highLow.high);
+        var low = Math.round(highLow.low);
 
         if (showBoth) {
-            var highC = helpers.fahrenheitToCelsius(high);
-            var lowC = helpers.fahrenheitToCelsius(low);
+            var highC = Math.round(helpers.fahrenheitToCelsius(highLow.high));
+            var lowC = Math.round(helpers.fahrenheitToCelsius(highLow.low));
             if (unit === 'C') {
                 return 'H:' + highC + '°C/' + high + '°F L:' + lowC + '°C/' + low + '°F';
             }
@@ -313,8 +313,8 @@ var DetailedForecastPage = {
         }
 
         if (unit === 'C') {
-            high = helpers.fahrenheitToCelsius(high);
-            low = helpers.fahrenheitToCelsius(low);
+            high = Math.round(helpers.fahrenheitToCelsius(highLow.high));
+            low = Math.round(helpers.fahrenheitToCelsius(highLow.low));
         }
 
         return 'H:' + high + '° L:' + low + '°';
