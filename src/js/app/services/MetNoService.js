@@ -22,13 +22,28 @@ class MetNoService extends WeatherService {
             headers: {
                 'User-Agent': Constants.userAgent
             }
-        }, function(data, status) {
+        }, function(data, status, req) {
             log('MetNo Response status: ' + status);
-            onSuccess(data);
+            onSuccess(data, req);
         }, function(error, status) {
             log('MetNo Error: ' + status + ' - ' + JSON.stringify(error));
             onError(error, status);
         });
+    }
+
+    /**
+     * When the response says the forecast is next updated, from its Expires
+     * header, or null when it does not say
+     */
+    _expiresAt(req) {
+        var header = null;
+        try {
+            header = req && req.getResponseHeader ? req.getResponseHeader('Expires') : null;
+        } catch (e) {
+            header = null;
+        }
+        var time = header ? Date.parse(header) : NaN;
+        return isNaN(time) ? null : time;
     }
 
     _buildUrl(latitude, longitude) {
@@ -46,7 +61,7 @@ class MetNoService extends WeatherService {
 
         log('MetNo: Fetching weather for ' + latitude + ', ' + longitude);
 
-        this._request(url, function(data) {
+        this._request(url, function(data, req) {
             var timeseries = data && data.properties && data.properties.timeseries;
             if (!timeseries || !timeseries.length) {
                 onError('Invalid MET Norway response');
@@ -99,7 +114,9 @@ class MetNoService extends WeatherService {
                 observationTime: self._parseTime(currentEntry.time),
                 forecastPeriods: dailyForecast.map(function(day) { return day.period; }),
                 hourlyForecast: { periods: hourlyPeriods },
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                // MET Norway's terms: not to be asked again before this
+                expiresAt: self._expiresAt(req)
             };
 
             onSuccess(weatherData);

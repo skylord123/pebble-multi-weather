@@ -122,6 +122,17 @@ var WeatherManager = {
             return;
         }
 
+        // A provider that said when its forecast is next updated is not asked
+        // again before then, even for a forced refresh: MET Norway's terms
+        // require it, and it would only answer with the same forecast
+        var held = CacheManager.get(providerId);
+        if (held && held.data && held.data.expiresAt && Date.now() < held.data.expiresAt) {
+            appState.setWeatherData(providerId, held.data);
+            log('WeatherManager: ' + providerId + ' not updated before ' + new Date(held.data.expiresAt));
+            if (onSuccess) onSuccess(held.data);
+            return;
+        }
+
         // Check cache first (unless forcing refresh)
         if (!forceRefresh) {
             var cachedData = CacheManager.getIfValid(providerId);
