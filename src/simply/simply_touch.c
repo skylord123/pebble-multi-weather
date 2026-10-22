@@ -188,6 +188,9 @@ static void prv_drag_move(int16_t y) {
 static int prv_fling_carry(void) {
   const uint32_t dt = s_last_ms - s_prev_ms;
   if (dt == 0 || dt > 100) { return 0; }  // stale samples: finger had stopped
+  // No new position since: the finger was held still before it lifted, and
+  // the last two samples are from the movement before that
+  if (now_ms() - s_last_ms > 100) { return 0; }
   return (s_last_y - s_prev_y) * (int) FLING_MS / (int) dt;
 }
 
