@@ -341,8 +341,9 @@ class MetNoService extends WeatherService {
         if (code.indexOf('sleet') !== -1) return 'Sleet';
         if (code.indexOf('rain') !== -1) return 'Rain';
         if (code.indexOf('fog') !== -1) return 'Fog';
-        if (code.indexOf('cloudy') !== -1) return 'Cloudy';
+        // Before 'cloudy', which 'partlycloudy' also contains
         if (code.indexOf('partlycloudy') !== -1) return 'Partly Cloudy';
+        if (code.indexOf('cloudy') !== -1) return 'Cloudy';
         if (code.indexOf('fair') !== -1) return 'Fair';
         if (code.indexOf('clearsky') !== -1) return 'Clear';
 
