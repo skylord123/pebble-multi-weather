@@ -6,6 +6,7 @@ var Settings = require('settings');
 var Touch = require('ui/touch');
 var AppState = require('app/AppState');
 var Constants = require('app/Constants');
+var ProviderSettings = require('app/ProviderSettings');
 var helpers = require('app/helpers');
 
 var SettingsManager = {
@@ -92,60 +93,13 @@ var SettingsManager = {
         log('Refresh interval: ' + appState.refreshInterval + ' minutes');
 
         // Provider order and enabled list
-        var savedOrder = Settings.option('provider_order');
         var savedEnabled = Settings.option('provider_enabled');
-        var defaultOrder = Constants.providerOrder.slice();
-
-        appState.providerEnabled = {};
-        if (savedEnabled && typeof savedEnabled === 'object') {
-            appState.providerEnabled = savedEnabled;
-        }
-
-        var orderedProviders = [];
-        if (Array.isArray(savedOrder) && savedOrder.length) {
-            for (var i = 0; i < savedOrder.length; i++) {
-                if (defaultOrder.indexOf(savedOrder[i]) !== -1 && orderedProviders.indexOf(savedOrder[i]) === -1) {
-                    orderedProviders.push(savedOrder[i]);
-                }
-            }
-        }
-        for (var j = 0; j < defaultOrder.length; j++) {
-            if (orderedProviders.indexOf(defaultOrder[j]) === -1) {
-                orderedProviders.push(defaultOrder[j]);
-            }
-        }
-
-        appState.providerOrderAll = orderedProviders;
-        appState.providerOrder = [];
-        for (var k = 0; k < orderedProviders.length; k++) {
-            var id = orderedProviders[k];
-            var provider = Constants.providers[id];
-            var isEnabled;
-
-            // Check if provider is explicitly set in saved settings
-            if (appState.providerEnabled && appState.providerEnabled.hasOwnProperty(id)) {
-                isEnabled = !!appState.providerEnabled[id];
-            } else {
-                // Default: providers requiring API key are disabled by default, others enabled
-                isEnabled = !(provider && provider.requiresApiKey);
-            }
-
-            // For providers requiring API key, also check if API key is actually configured
-            if (isEnabled && provider && provider.requiresApiKey) {
-                if (id === 'openweather' && !appState.openweatherApiKey) {
-                    isEnabled = false;
-                    log('OpenWeather disabled: no API key configured');
-                }
-                if (id === 'weatherapi' && !appState.weatherapiApiKey) {
-                    isEnabled = false;
-                    log('WeatherAPI disabled: no API key configured');
-                }
-            }
-
-            if (isEnabled) {
-                appState.providerOrder.push(id);
-            }
-        }
+        appState.providerEnabled = (savedEnabled && typeof savedEnabled === 'object') ? savedEnabled : {};
+        appState.providerOrderAll = ProviderSettings.order(Settings.option('provider_order'));
+        appState.providerOrder = ProviderSettings.enabled(function(name) {
+            return Settings.option(name);
+        });
+        log('Enabled providers: ' + appState.providerOrder.join(', '));
     },
 
     /**
