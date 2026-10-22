@@ -96,9 +96,14 @@ static bool send_touch_data(const TouchEvent *event) {
 }
 
 // Pebble's time_ms() only returns milliseconds within the current second, so
-// pair it with the seconds clock to get something subtractable
+// pair it with the seconds to get something subtractable. Both come from the
+// one call: read separately, a second could tick over between them and the
+// time go back by nearly a second, which made a tap look too old to count.
 static uint32_t now_ms(void) {
-  return (uint32_t) time(NULL) * 1000u + (uint32_t) time_ms(NULL, NULL);
+  time_t seconds;
+  uint16_t millis;
+  time_ms(&seconds, &millis);
+  return (uint32_t) seconds * 1000u + (uint32_t) millis;
 }
 
 static SimplyMenu *prv_top_menu(Simply *simply) {
