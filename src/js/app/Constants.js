@@ -60,7 +60,8 @@ var Constants = {
 
     // HTTP request settings
     requestTimeout: 30000,
-    userAgent: 'PebbleMultiWeather/' + this.appVersion + ' (multiweather@skylarsadlier.com)',
+    // Filled in below: an object literal cannot refer to its own appVersion
+    userAgent: null,
 
     // Refresh interval in minutes
     defaultRefreshInterval: 15,
@@ -124,5 +125,7 @@ var Constants = {
     // Default custom template for detailed forecast subtitle
     defaultDetailedForecastSubtitleTemplate: '{temp} {temp_high} / {temp_low} {precip}'
 };
+
+Constants.userAgent = 'PebbleMultiWeather/' + Constants.appVersion + ' (multiweather@skylarsadlier.com)';
 
 module.exports = Constants;
