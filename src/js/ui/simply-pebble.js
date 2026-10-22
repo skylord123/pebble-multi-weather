@@ -7,6 +7,7 @@ var Wakeup = require('wakeup');
 var Timeline = require('timeline');
 var Resource = require('ui/resource');
 var Accel = require('ui/accel');
+var Touch = require('ui/touch');
 var Voice = require('ui/voice');
 var ImageService = require('ui/imageservice');
 var WindowStack = require('ui/windowstack');
@@ -555,6 +556,21 @@ var AccelTapPacket = new struct([
   ['int8', 'direction'],
 ]);
 
+var TouchConfigPacket = new struct([
+  [Packet, 'packet'],
+  ['bool', 'subscribed', BoolType],
+  ['bool', 'wantsMoves', BoolType],
+  ['bool', 'enabled', BoolType],
+  ['bool', 'longPress', BoolType],
+]);
+
+var TouchDataPacket = new struct([
+  [Packet, 'packet'],
+  ['uint8', 'type'],
+  ['int16', 'x'],
+  ['int16', 'y'],
+]);
+
 var MenuClearPacket = new struct([
   [Packet, 'packet'],
 ]);
@@ -595,8 +611,10 @@ var MenuItemPacket = new struct([
   ['uint32', 'icon', ImageType],
   ['uint16', 'titleLength', StringLengthType],
   ['uint16', 'subtitleLength', StringLengthType],
+  ['uint16', 'subtextLength', StringLengthType],
   ['cstring', 'title', StringType],
   ['cstring', 'subtitle', StringType],
+  ['cstring', 'subtext', StringType],
 ]);
 
 var MenuGetItemPacket = new struct([
@@ -821,6 +839,16 @@ var CommandPackets = [
   VoiceDictationDataPacket,
   CalculateTextSizePacket,
   CalculateTextSizeResponsePacket,
+  TouchConfigPacket,
+  TouchDataPacket,
+];
+
+// Mirrors TouchEventType in the SDK. Position updates are only sent when a
+// window opts into them via touchConfig({ wantsMoves: true }).
+var touchEventTypes = [
+  'down',
+  'up',
+  'move',
 ];
 
 var accelAxes = [
@@ -877,13 +905,22 @@ var MessageQueue = function() {
 
   this._consume = this.consume.bind(this);
   this._cycle = this.cycle.bind(this);
+  this._retry = this.retry.bind(this);
+  this._retryDelay = 0;
 };
+
+// A failed send is tried again after a pause that doubles up to a few
+// seconds: retrying at once spun the phone for as long as the watch was
+// out of reach
+MessageQueue.RETRY_MIN_MS = 100;
+MessageQueue.RETRY_MAX_MS = 5000;
 
 MessageQueue.prototype.stop = function() {
   this._sending = false;
 };
 
 MessageQueue.prototype.consume = function() {
+  this._retryDelay = 0;
   this._queue.shift();
   if (this._queue.length === 0) {
     return this.stop();
@@ -909,8 +946,14 @@ MessageQueue.prototype.cycle = function() {
   }
   this._sent = head;
   var success = this.checkSent(head, this._consume);
-  var failure = this.checkSent(head, this._cycle);
+  var failure = this.checkSent(head, this._retry);
   Pebble.sendAppMessage(head, success, failure);
+};
+
+MessageQueue.prototype.retry = function() {
+  this._retryDelay = Math.min(MessageQueue.RETRY_MAX_MS,
+      Math.max(MessageQueue.RETRY_MIN_MS, this._retryDelay * 2));
+  setTimeout(this._cycle, this._retryDelay);
 };
 
 MessageQueue.prototype.send = function(message) {
@@ -1161,6 +1204,10 @@ SimplyPebble.accelConfig = function(def) {
   SimplyPebble.sendPacket(AccelConfigPacket.prop(def));
 };
 
+SimplyPebble.touchConfig = function(def) {
+  SimplyPebble.sendPacket(TouchConfigPacket.prop(def));
+};
+
 SimplyPebble.voiceDictationStart = function(callback, enableConfirmation) {
   if (Platform.version() === 'aplite') {
     // If there is no microphone, call with an error event
@@ -1240,8 +1287,10 @@ SimplyPebble.menuItem = function(section, item, def) {
     .icon(def.icon)
     .titleLength(def.title)
     .subtitleLength(def.subtitle)
+    .subtextLength(def.subtext)
     .title(def.title)
-    .subtitle(def.subtitle);
+    .subtitle(def.subtitle)
+    .subtext(def.subtext);
   SimplyPebble.sendPacket(MenuItemPacket);
 };
 
@@ -1579,6 +1628,9 @@ SimplyPebble.onPacket = function(buffer, offset) {
       break;
     case AccelTapPacket:
       Accel.emitAccelTap(accelAxes[packet.axis()], packet.direction());
+      break;
+    case TouchDataPacket:
+      Touch.emitTouchData(touchEventTypes[packet.type()], packet.x(), packet.y());
       break;
     case MenuGetSectionPacket:
       Menu.emitSection(packet.section());

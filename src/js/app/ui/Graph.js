@@ -179,6 +179,10 @@ Graph.prototype._draw = function() {
     // Line series
     var xStep = values.length > 1 ? plotWidth / (values.length - 1) : 0;
     for (var k = 0; k < values.length - 1; k++) {
+        // A missing reading leaves a gap rather than a drop to the bottom
+        if (this._isMissing(values[k]) || this._isMissing(values[k + 1])) {
+            continue;
+        }
         var v1 = this._clamp(values[k], minValue, maxValue);
         var v2 = this._clamp(values[k + 1], minValue, maxValue);
         var x1 = plotLeft + k * xStep;
@@ -204,6 +208,10 @@ Graph.prototype._drawEmpty = function(size) {
         color: 'white',
         textAlign: 'center'
     }));
+};
+
+Graph.prototype._isMissing = function(value) {
+    return value === null || value === undefined || isNaN(value);
 };
 
 Graph.prototype._clamp = function(value, minValue, maxValue) {

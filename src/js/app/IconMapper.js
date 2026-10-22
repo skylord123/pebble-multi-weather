@@ -204,8 +204,9 @@ var IconMapper = {
             return this.resolveIcon('rain');
         }
         if (code.indexOf('fog') !== -1) return this.resolveIcon('lowvisibility');
-        if (code.indexOf('cloudy') !== -1) return this.resolveIcon('cloudy');
+        // Before 'cloudy', which 'partlycloudy' also contains
         if (code.indexOf('partlycloudy') !== -1) return this.resolveIcon('partlycloudy');
+        if (code.indexOf('cloudy') !== -1) return this.resolveIcon('cloudy');
         if (code.indexOf('fair') !== -1 || code.indexOf('clearsky') !== -1) return this.resolveIcon('sunny');
 
         return this.resolveIcon('na');

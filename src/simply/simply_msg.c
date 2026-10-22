@@ -1,6 +1,7 @@
 #include "simply_msg.h"
 
 #include "simply_accel.h"
+#include "simply_touch.h"
 #include "simply_voice.h"
 #include "simply_res.h"
 #include "simply_stage.h"
@@ -21,6 +22,11 @@
 #include <pebble.h>
 
 #define SEND_DELAY_MS 10
+
+// Retries back off to no more than this: left to keep doubling, the wait
+// grew as long as the phone had been away, and taps sat unsent after it was
+// back
+#define SEND_DELAY_MAX_MS 2000
 
 static const size_t APP_MSG_SIZE_INBOUND = IF_APLITE_ELSE(1024, 2044);
 static const size_t APP_MSG_SIZE_OUTBOUND = 1024;
@@ -75,6 +81,8 @@ struct __attribute__((__packed__)) LightPacket {
 };
 
 static SimplyMsg *s_msg = NULL;
+
+static void prv_phone_reachable(SimplyMsg *self);
 
 static bool s_has_communicated = false;
 
@@ -313,12 +321,15 @@ static void handle_packet(Simply *simply, Packet *packet) {
   if (simply_window_handle_packet(simply, packet)) { return; }
   if (simply_ui_handle_packet(simply, packet)) { return; }
   if (simply_accel_handle_packet(simply, packet)) { return; }
+  if (simply_touch_handle_packet(simply, packet)) { return; }
   if (simply_voice_handle_packet(simply, packet)) { return; }
   if (simply_menu_handle_packet(simply, packet)) { return; }
   if (simply_stage_handle_packet(simply, packet)) { return; }
 }
 
 static void received_callback(DictionaryIterator *iter, void *context) {
+  prv_phone_reachable(s_msg);
+
   // Check if this is a scroll message
   Tuple *scroll_y_tuple = dict_find(iter, MESSAGE_KEY_SCROLL_Y);
   if (scroll_y_tuple) {
@@ -483,8 +494,25 @@ static void send_msg_retry(void *data) {
     self->send_delay_ms = SEND_DELAY_MS;
   } else {
     self->send_delay_ms *= 2;
+    if (self->send_delay_ms > SEND_DELAY_MAX_MS) {
+      self->send_delay_ms = SEND_DELAY_MAX_MS;
+    }
   }
   self->send_timer = app_timer_register(self->send_delay_ms, send_msg_retry, self);
+}
+
+/**
+ * The phone just sent something, so it is reachable: a send waiting out a
+ * backoff goes now.
+ */
+static void prv_phone_reachable(SimplyMsg *self) {
+  if (!self || self->send_delay_ms <= SEND_DELAY_MS) {
+    return;
+  }
+  self->send_delay_ms = SEND_DELAY_MS;
+  if (self->send_timer) {
+    app_timer_reschedule(self->send_timer, SEND_DELAY_MS);
+  }
 }
 
 static SimplyPacket *add_packet(SimplyMsg *self, Packet *buffer) {

@@ -35,25 +35,35 @@ var PrecipitationGraphPage = {
             return;
         }
 
+        // Determine if data is in mm or %
+        var isMM = (periods.length > 0 && periods[0].probabilityOfPrecipitation &&
+                    periods[0].probabilityOfPrecipitation.unitCode === 'mm');
+
         var values = [];
         for (var i = 0; i < periods.length; i++) {
             var pop = periods[i].probabilityOfPrecipitation;
-            var value = (pop && pop.value !== null && pop.value !== undefined) ? Math.round(pop.value) : 0;
-            values.push(this._clampPercent(value));
+            var value = (pop && pop.value !== null && pop.value !== undefined) ? pop.value : 0;
+            if (isMM) {
+                values.push(Math.max(0, Math.min(20, value)));
+            } else {
+                values.push(this._clampPercent(Math.round(value)));
+            }
         }
 
         var xLabels = this._buildXLabels(periods);
         var providerName = GraphNavigation.getProviderName(providerId);
+        var yMax = isMM ? 20 : 100;
+        var yTicks = isMM ? [0, 10, 20] : [0, 50, 100];
 
         this.graph = new Graph({
             title: 'Precipitation',
-            subtitle: providerName,
+            subtitle: providerName + (isMM ? ' (mm)' : ' (%)'),
             values: values,
             valueMin: 0,
-            valueMax: 100,
-            yTicks: [0, 50, 100],
+            valueMax: yMax,
+            yTicks: yTicks,
             yFormatter: function(value) {
-                return Math.round(value) + '%';
+                return Math.round(value) + (isMM ? ' mm' : '%');
             },
             xLabels: xLabels,
             lineColor: 'white',
@@ -69,11 +79,12 @@ var PrecipitationGraphPage = {
                 valueTextForPeriod: function(period) {
                     var pop = period.probabilityOfPrecipitation;
                     var value = (pop && pop.value !== null && pop.value !== undefined)
-                        ? Math.round(pop.value)
+                        ? pop.value
                         : null;
+                    var unit = (pop && pop.unitCode === 'mm') ? ' mm' : '%';
                     return (value === null || value === undefined || isNaN(value))
                         ? '--'
-                        : value + '%';
+                        : Math.round(value * 10) / 10 + unit;
                 }
             });
         });

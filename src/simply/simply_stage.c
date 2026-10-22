@@ -197,8 +197,10 @@ static void destroy_element(SimplyStage *self, SimplyElementCommon *element) {
 
 static void destroy_animation(SimplyStage *self, SimplyAnimation *animation) {
   if (!animation) { return; }
-  property_animation_destroy(animation->animation);
+  // Unlinked first: destroying a running animation stops it, and the stopped
+  // handler would otherwise find it in the list and free it a second time
   list1_remove(&self->stage_layer.animations, &animation->node);
+  property_animation_destroy(animation->animation);
   free(animation);
 }
 
@@ -629,8 +631,17 @@ static void handle_element_remove_packet(Simply *simply, Packet *data) {
   if (!element) {
     return;
   }
-  simply_stage_remove_element(simply->stage, element);
-  simply_stage_update(simply->stage);
+  // Gone for good: putting it back sends the whole element again. Anything
+  // animating it goes too, so nothing is left pointing at it.
+  SimplyStage *stage = simply->stage;
+  SimplyAnimation *animation;
+  while ((animation = (SimplyAnimation*) list1_find(stage->stage_layer.animations,
+                                                    animation_element_filter, element))) {
+    destroy_animation(stage, animation);
+  }
+  simply_stage_remove_element(stage, element);
+  destroy_element(stage, element);
+  simply_stage_update(stage);
 }
 
 static void handle_element_common_packet(Simply *simply, Packet *data) {

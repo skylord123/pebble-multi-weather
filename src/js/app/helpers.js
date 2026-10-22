@@ -138,6 +138,23 @@ var helpers = {
     },
 
     /**
+     * Local midnight of a calendar date given as "YYYY-MM-DD"
+     *
+     * new Date() reads a date-only string as midnight UTC, which west of
+     * Greenwich is the evening before, so the day would be named and
+     * bounded a day early.
+     * @param {string} value - The date, e.g. "2026-10-23"
+     * @returns {number|null} Milliseconds since the epoch
+     */
+    localDate: function(value) {
+        var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || '');
+        if (!match) {
+            return null;
+        }
+        return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime();
+    },
+
+    /**
      * Convert Pascals to inches of mercury
      * @param {number} pascals - Pressure in Pascals
      * @returns {number} Pressure in inches of mercury
@@ -248,7 +265,7 @@ var helpers = {
         if (typeof value === 'number') {
             return value;
         }
-        var matches = value.toString().match(/[\\d.]+/g);
+        var matches = value.toString().match(/[\d.]+/g);
         if (!matches || !matches.length) {
             return null;
         }

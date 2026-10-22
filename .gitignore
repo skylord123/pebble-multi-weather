@@ -2,4 +2,5 @@
 .claude
 .instructions
 build
-.lock-waf_linux2_build
+.lock-waf_*
+__pycache__/

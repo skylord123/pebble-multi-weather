@@ -15,9 +15,16 @@ var OpenWeatherService = require('app/services/OpenWeatherService');
 var WeatherAPIService = require('app/services/WeatherAPIService');
 var CacheManager = require('app/services/CacheManager');
 
+// How long a provider has to answer a fetch, all its requests together (NWS
+// makes up to five, some one after another)
+var PROVIDER_TIMEOUT_MS = 60 * 1000;
+
 var WeatherManager = {
     // Weather service instances
     services: {},
+
+    // The newest fetch per provider, so an older one answering late is ignored
+    requests: {},
 
     /**
      * Initialize all weather services
@@ -115,9 +122,21 @@ var WeatherManager = {
             return;
         }
 
+        // A provider that said when its forecast is next updated is not asked
+        // again before then, even for a forced refresh: MET Norway's terms
+        // require it, and it would only answer with the same forecast
+        var held = CacheManager.get(providerId);
+        if (held && held.data && held.data.expiresAt && Date.now() < held.data.expiresAt &&
+            CacheManager.isForPlace(held, appState.latitude, appState.longitude)) {
+            appState.setWeatherData(providerId, held.data);
+            log('WeatherManager: ' + providerId + ' not updated before ' + new Date(held.data.expiresAt));
+            if (onSuccess) onSuccess(held.data);
+            return;
+        }
+
         // Check cache first (unless forcing refresh)
         if (!forceRefresh) {
-            var cachedData = CacheManager.getIfValid(providerId);
+            var cachedData = CacheManager.getIfValid(providerId, appState.latitude, appState.longitude);
             if (cachedData) {
                 appState.setWeatherData(providerId, cachedData);
                 log('WeatherManager: ' + providerId + ' loaded from cache');
@@ -129,19 +148,64 @@ var WeatherManager = {
         log('WeatherManager: Fetching from ' + providerId);
         appState.setProviderStatus(providerId, 'loading');
 
+        // Only the newest fetch for a provider counts: an older one answering
+        // late must not overwrite fresher weather or the cache. And a fetch
+        // that never answers, or whose answer could not be read, must not
+        // leave the provider loading forever.
+        var self = this;
+        var request = (this.requests[providerId] || 0) + 1;
+        this.requests[providerId] = request;
+        var settled = false;
+        function claim() {
+            if (settled || self.requests[providerId] !== request) {
+                return false;
+            }
+            settled = true;
+            clearTimeout(watchdog);
+            return true;
+        }
+        var watchdog = setTimeout(function() {
+            if (!claim()) {
+                return;
+            }
+            appState.setProviderStatus(providerId, 'error');
+            appState.setProviderError(providerId, {
+                title: 'No Answer',
+                detail: service.getName() + ' did not answer. Long press to try again.',
+                type: 'Timeout'
+            });
+            log('WeatherManager: ' + providerId + ' did not answer');
+            if (onError) {
+                onError('timeout');
+            }
+        }, PROVIDER_TIMEOUT_MS);
+
+        // Where this fetch is for, which the location may have moved on from
+        // by the time it answers
+        var latitude = appState.latitude;
+        var longitude = appState.longitude;
+
         service.fetchWeather(
-            appState.latitude,
-            appState.longitude,
+            latitude,
+            longitude,
             function(data) {
+                if (!claim()) {
+                    log('WeatherManager: ignoring an older answer from ' + providerId);
+                    return;
+                }
                 appState.setWeatherData(providerId, data);
                 appState.setProviderError(providerId, null); // Clear any previous error
-                CacheManager.save(providerId, data);
+                CacheManager.save(providerId, data, latitude, longitude);
                 log('WeatherManager: ' + providerId + ' data received and cached');
                 if (onSuccess) {
                     onSuccess(data);
                 }
             },
             function(err) {
+                if (!claim()) {
+                    log('WeatherManager: ignoring an older failure from ' + providerId);
+                    return;
+                }
                 // Check if this is an API error with details (e.g., InvalidPoint)
                 if (err && err.isApiError) {
                     var isUnavailable = err.type && err.type.indexOf('InvalidPoint') !== -1;
@@ -229,19 +293,19 @@ var WeatherManager = {
         var service = this.getService(providerId);
 
         if (!appState.hasLocation()) {
-            return 'Getting location...';
+            return appState.locationFailed ? 'Location unavailable' : 'Getting location...';
         }
 
         if (status === 'unavailable') {
             return 'USA Only';
         }
 
-        if (status === 'loading' || !data) {
-            return 'Fetching...';
-        }
-
         if (status === 'error') {
             return 'Error loading data';
+        }
+
+        if (status === 'loading' || !data) {
+            return 'Fetching...';
         }
 
         if (service) {

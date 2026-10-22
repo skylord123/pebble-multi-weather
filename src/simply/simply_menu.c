@@ -35,6 +35,82 @@
 #define SCROLL_IDLE_TIMEOUT_MS 60000  // Stop scrolling after 60 seconds of inactivity (configurable)
 #endif
 
+// The firmware selects the Large content size for displays 200px or taller
+// (PebbleOS preferred_content_size.h). SDK 4.17 does not expose
+// PBL_DISPLAY_HEIGHT, so name emery explicitly as well; newer SDKs pick up
+// any future large-screen platform through the display height automatically.
+#if defined(PBL_PLATFORM_EMERY) || (defined(PBL_DISPLAY_HEIGHT) && PBL_DISPLAY_HEIGHT >= 200)
+#define MENU_CONTENT_SIZE_LARGE 1
+#endif
+
+// A section title on a round display has to live with a line width that
+// changes as the band moves up and down the circle, and it sits among cells
+// drawn at a much larger scale than the rectangular ones, where the system's
+// 16px band looks like a slot rather than a heading. Round gets a band tall
+// enough for the title, centred in it; rectangular keeps the system's own
+// header exactly as it was.
+#if defined(PBL_ROUND) && !defined(PBL_PLATFORM_CHALK)
+// A round display taller than 200px draws its rows the way PebbleOS draws the
+// app launcher's, and these are the launcher's own numbers, taken from
+// apps/system/launcher/default: menu_layer_private.h for the cell heights,
+// menu_layer.h for the fonts, app_glance_structured.h and .c for the icon box
+// and the margin either side of it. The icon sits left in a box of that fixed
+// width whatever size the icon itself is, so every title in a list starts at
+// the same place, and the title and subtitle are centred as a pair beside it.
+// Chalk is left alone: the launcher there is drawn to a different set of
+// numbers again, and its menus keep the centred layout they have always had.
+#define MENU_ROUND_LAUNCHER_STYLE 1
+#define MENU_ROUND_ROW_FOCUSED 55
+#define MENU_ROUND_ROW_UNFOCUSED 45
+#define MENU_ROUND_ICON_BOX 25
+#define MENU_ROUND_ICON_MARGIN 9
+//! The margin a row keeps from the glass once it has followed the curve in
+#define MENU_ROUND_BASE_INSET 10
+#define MENU_ROUND_TITLE_FONT_KEY FONT_KEY_GOTHIC_24_BOLD
+#define MENU_ROUND_SUBTITLE_FONT_KEY FONT_KEY_GOTHIC_18
+#define MENU_ROUND_TITLE_HEIGHT 24
+#define MENU_ROUND_SUBTITLE_HEIGHT 18
+#endif
+
+#if defined(PBL_ROUND)
+// One pair of names for the row heights this round platform actually uses, so
+// the cell callback, the touch hit test, the scroll range and the settle can
+// never disagree about them
+#if defined(MENU_ROUND_LAUNCHER_STYLE)
+#define MENU_ROUND_FOCUSED_HEIGHT MENU_ROUND_ROW_FOCUSED
+#define MENU_ROUND_UNFOCUSED_HEIGHT MENU_ROUND_ROW_UNFOCUSED
+#else
+#define MENU_ROUND_FOCUSED_HEIGHT MENU_CELL_ROUND_FOCUSED_TALL_CELL_HEIGHT
+#define MENU_ROUND_UNFOCUSED_HEIGHT MENU_CELL_ROUND_UNFOCUSED_SHORT_CELL_HEIGHT
+#endif
+
+//! Height of one line of the header font
+#define MENU_HEADER_LINE_HEIGHT 18
+//! Padding above and below the title within its band
+#define MENU_HEADER_PADDING 6
+//! The title stays on one line. A second line does not help on a circle: the
+//! band sits above the centred selection, so making it taller only pushes its
+//! top line further into the narrow part of the glass, and a title that fitted
+//! on one line starts breaking mid word on two.
+#define MENU_HEADER_HEIGHT (MENU_HEADER_LINE_HEIGHT + 2 * MENU_HEADER_PADDING)
+//! A heading is one short centred line rather than a paragraph, so it is given
+//! a smaller margin from the edge of the glass than body text gets
+#define MENU_HEADER_TEXT_INSET 4
+#endif
+
+// A row's third line, under the subtitle and in the same font
+#define MENU_SUBTEXT_FONT_KEY FONT_KEY_GOTHIC_18
+#define MENU_SUBTEXT_HEIGHT 18
+
+// Rectangular rows: the height the system gives them, and the height of one
+// with a third line. The large content size rows already have room for it.
+#if defined(MENU_CONTENT_SIZE_LARGE)
+#define MENU_RECT_CELL_HEIGHT 61
+#else
+#define MENU_RECT_CELL_HEIGHT MENU_CELL_BASIC_CELL_HEIGHT
+#endif
+#define MENU_RECT_SUBTEXT_CELL_HEIGHT 60
+
 typedef Packet MenuClearPacket;
 
 typedef struct MenuClearSectionPacket MenuClearSectionPacket;
@@ -76,6 +152,7 @@ struct __attribute__((__packed__)) MenuItemPacket {
   uint32_t icon;
   uint16_t title_length;
   uint16_t subtitle_length;
+  uint16_t subtext_length;
   char buffer[];
 };
 
@@ -228,6 +305,7 @@ static void prv_destroy_item(SimplyMenu *self, SimplyMenuItem *item) {
   list1_remove(&self->menu_layer.items, &item->node);
   prv_free_title(&item->title);
   prv_free_title(&item->subtitle);
+  prv_free_title(&item->subtext);
   free(item);
 }
 
@@ -328,8 +406,16 @@ static void simply_menu_add_item(SimplyMenu *self, SimplyMenuItem *item) {
   if (item->title == NULL) {
     item->title = EMPTY_TITLE;
   }
+  // A third line changes the row's height, which the menu only takes in when
+  // it reloads; a row whose text merely changed only needs redrawing
+  SimplyMenuItem *previous = prv_get_menu_item(self, item->section, item->item);
+  const bool had_subtext = previous && previous->subtext;
   prv_add_item(self, item);
-  prv_mark_dirty(self);
+  if (had_subtext != (item->subtext != NULL)) {
+    prv_reload_data_debounced(self);
+  } else {
+    prv_mark_dirty(self);
+  }
 }
 
 static MenuIndex simply_menu_get_selection(SimplyMenu *self) {
@@ -439,23 +525,28 @@ static void scroll_timer_callback_round(void *data) {
   self->scroll_timer = NULL;
 
   // Check if either title or subtitle needs scrolling
-  if (!self->title_needs_scroll && !self->subtitle_needs_scroll) {
+  if (!self->title_needs_scroll && !self->subtitle_needs_scroll && !self->subtext_needs_scroll) {
     return;
   }
 
   bool title_finished = false;
   bool subtitle_finished = false;
+  bool subtext_finished = false;
 
   // Handle title scrolling
   if (self->title_needs_scroll) {
     if (!self->title_scrolling_active) {
       self->title_scrolling_active = true;
       self->title_scroll_offset = SCROLL_STEP_PX;
-    } else {
+    } else if (self->title_scroll_offset < self->title_max_scroll_offset) {
+      // Stops at its end, even while the other line is still scrolling
       self->title_scroll_offset += SCROLL_STEP_PX;
-      if (self->title_scroll_offset >= self->title_max_scroll_offset) {
-        title_finished = true;
+      if (self->title_scroll_offset > self->title_max_scroll_offset) {
+        self->title_scroll_offset = self->title_max_scroll_offset;
       }
+    }
+    if (self->title_scroll_offset >= self->title_max_scroll_offset) {
+      title_finished = true;
     }
   }
 
@@ -464,11 +555,31 @@ static void scroll_timer_callback_round(void *data) {
     if (!self->subtitle_scrolling_active) {
       self->subtitle_scrolling_active = true;
       self->subtitle_scroll_offset = SCROLL_STEP_PX;
-    } else {
+    } else if (self->subtitle_scroll_offset < self->subtitle_max_scroll_offset) {
+      // Stops at its end, even while the other line is still scrolling
       self->subtitle_scroll_offset += SCROLL_STEP_PX;
-      if (self->subtitle_scroll_offset >= self->subtitle_max_scroll_offset) {
-        subtitle_finished = true;
+      if (self->subtitle_scroll_offset > self->subtitle_max_scroll_offset) {
+        self->subtitle_scroll_offset = self->subtitle_max_scroll_offset;
       }
+    }
+    if (self->subtitle_scroll_offset >= self->subtitle_max_scroll_offset) {
+      subtitle_finished = true;
+    }
+  }
+
+  // Handle subtext scrolling
+  if (self->subtext_needs_scroll) {
+    if (!self->subtext_scrolling_active) {
+      self->subtext_scrolling_active = true;
+      self->subtext_scroll_offset = SCROLL_STEP_PX;
+    } else if (self->subtext_scroll_offset < self->subtext_max_scroll_offset) {
+      self->subtext_scroll_offset += SCROLL_STEP_PX;
+      if (self->subtext_scroll_offset > self->subtext_max_scroll_offset) {
+        self->subtext_scroll_offset = self->subtext_max_scroll_offset;
+      }
+    }
+    if (self->subtext_scroll_offset >= self->subtext_max_scroll_offset) {
+      subtext_finished = true;
     }
   }
 
@@ -478,6 +589,9 @@ static void scroll_timer_callback_round(void *data) {
     all_finished = false;
   }
   if (self->subtitle_needs_scroll && !subtitle_finished) {
+    all_finished = false;
+  }
+  if (self->subtext_needs_scroll && !subtext_finished) {
     all_finished = false;
   }
 
@@ -504,6 +618,8 @@ static void reset_scroll_callback_round(void *data) {
   self->title_scrolling_active = false;
   self->subtitle_scroll_offset = 0;
   self->subtitle_scrolling_active = false;
+  self->subtext_scroll_offset = 0;
+  self->subtext_scrolling_active = false;
 
   // Mark dirty to redraw
   prv_mark_dirty(self);
@@ -547,6 +663,10 @@ static void start_scroll_timer(SimplyMenu *self, MenuIndex index) {
   self->subtitle_max_scroll_offset = 0;
   self->subtitle_needs_scroll = false;
   self->subtitle_scrolling_active = false;
+  self->subtext_scroll_offset = 0;
+  self->subtext_max_scroll_offset = 0;
+  self->subtext_needs_scroll = false;
+  self->subtext_scrolling_active = false;
 #endif
 
   // Mark dirty to redraw without scroll
@@ -570,6 +690,10 @@ static void stop_scroll_timer(SimplyMenu *self) {
   self->max_scroll_offset = 0;
   self->scrolling_active = false;
   self->needs_scrolling = false;
+#ifdef SIMPLY_HAS_TOUCH
+  // A row a drag left in the middle of a menu means nothing to the next one
+  self->scroll_index_pinned = false;
+#endif
 
 #if defined(PBL_ROUND)
   self->title_scroll_offset = 0;
@@ -580,6 +704,10 @@ static void stop_scroll_timer(SimplyMenu *self) {
   self->subtitle_max_scroll_offset = 0;
   self->subtitle_needs_scroll = false;
   self->subtitle_scrolling_active = false;
+  self->subtext_scroll_offset = 0;
+  self->subtext_max_scroll_offset = 0;
+  self->subtext_needs_scroll = false;
+  self->subtext_scrolling_active = false;
 #endif
 }
 #endif
@@ -596,23 +724,54 @@ static uint16_t prv_menu_get_num_rows_callback(MenuLayer *menu_layer, uint16_t s
   return section ? section->num_items : 1;
 }
 
+//! The height of a title's band, or 0 for a section that has no title. The
+//! layer callback, the drawing and the touch hit test all ask this, so they
+//! cannot disagree about where a section starts.
+static int16_t prv_header_height(SimplyMenu *self, uint16_t section_index) {
+  SimplyMenuSection *section = prv_get_menu_section(self, section_index);
+  if (!(section && section->title && section->title != EMPTY_TITLE)) { return 0; }
+
+  return PBL_IF_ROUND_ELSE(MENU_HEADER_HEIGHT, MENU_CELL_BASIC_HEADER_HEIGHT);
+}
+
 static int16_t prv_menu_get_header_height_callback(MenuLayer *menu_layer, uint16_t section_index,
                                                    void *data) {
-  SimplyMenu *self = data;
-  SimplyMenuSection *section = prv_get_menu_section(self, section_index);
-  return (section && section->title &&
-          section->title != EMPTY_TITLE ? MENU_CELL_BASIC_HEADER_HEIGHT : 0);
+  return prv_header_height(data, section_index);
+}
+
+//! Whether a row shows its third line: every row on a rectangular watch, and
+//! on a round one only the focused row, which is the one with room to spare
+static bool prv_shows_subtext(SimplyMenuItem *item, bool is_selected) {
+  if (!item || !item->subtext) { return false; }
+#if defined(PBL_PLATFORM_APLITE)
+  return false;
+#elif defined(PBL_ROUND)
+  return is_selected;
+#else
+  (void) is_selected;
+  return true;
+#endif
+}
+
+//! A row's height. The layout, the drawing and the touch hit test all ask this,
+//! so they cannot disagree about where a row is.
+ROUND_USAGE static int16_t prv_row_height(SimplyMenu *self, MenuIndex *index, bool is_selected) {
+  SimplyMenuItem *item = prv_get_menu_item(self, index->section, index->row);
+  const bool subtext = prv_shows_subtext(item, is_selected);
+#if defined(PBL_ROUND)
+  const int16_t height = is_selected ? MENU_ROUND_FOCUSED_HEIGHT : MENU_ROUND_UNFOCUSED_HEIGHT;
+  return subtext ? height + MENU_SUBTEXT_HEIGHT : height;
+#else
+  if (subtext && MENU_RECT_CELL_HEIGHT < MENU_RECT_SUBTEXT_CELL_HEIGHT) {
+    return MENU_RECT_SUBTEXT_CELL_HEIGHT;
+  }
+  return MENU_RECT_CELL_HEIGHT;
+#endif
 }
 
 ROUND_USAGE static int16_t prv_menu_get_cell_height_callback(MenuLayer *menu_layer, MenuIndex *cell_index,
                                                              void *context) {
-  if (PBL_IF_ROUND_ELSE(true, false)) {
-    const bool is_selected = menu_layer_is_index_selected(menu_layer, cell_index);
-    return is_selected ? MENU_CELL_ROUND_FOCUSED_TALL_CELL_HEIGHT :
-                         MENU_CELL_ROUND_UNFOCUSED_SHORT_CELL_HEIGHT;
-  } else {
-    return MENU_CELL_BASIC_CELL_HEIGHT;
-  }
+  return prv_row_height(context, cell_index, menu_layer_is_index_selected(menu_layer, cell_index));
 }
 
 #if !defined(PBL_PLATFORM_APLITE)
@@ -622,7 +781,11 @@ static void prv_menu_selection_changed_callback(MenuLayer *menu_layer, MenuIndex
   // Update last input time and clear idle state
   self->last_input_time = time(NULL);
   self->scroll_idle = false;
-  // Start scroll timer for the new selection
+  // Start scroll timer for the new selection, which takes the marquee back
+  // from any row a finger had left in the middle of the screen
+#ifdef SIMPLY_HAS_TOUCH
+  self->scroll_index_pinned = false;
+#endif
   start_scroll_timer(self, new_index);
   // Only send selection event if the window is still loaded and visible
   // This prevents crashes when the menu is being torn down
@@ -649,20 +812,34 @@ static void prv_menu_draw_header_callback(GContext *ctx, const Layer *cell_layer
   graphics_context_set_fill_color(ctx, gcolor8_get_or(section->title_background, GColorWhite));
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  bounds.origin.x += 2;
-  bounds.origin.y -= 1;
-
   graphics_context_set_text_color(ctx, gcolor8_get_or(section->title_foreground, GColorBlack));
 
+  const GFont title_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+
+#if defined(PBL_ROUND)
+  // Screen text flow insets each line to the width of the glass at the height
+  // the band has scrolled to, so a title is never cut off against the bezel.
+  // Paging is what used to be asked for here, and it is the wrong tool: it
+  // moves text down to avoid straddling a page boundary, which in a band this
+  // short pushed every title clean out of its own header and left nothing but
+  // a coloured bar, or on a menu whose header takes the menu's own colours,
+  // an apparent gap.
   GTextAttributes *title_attributes = graphics_text_attributes_create();
-  PBL_IF_ROUND_ELSE(
-      graphics_text_attributes_enable_paging_on_layer(
-          title_attributes, (Layer *)menu_layer_get_scroll_layer(self->menu_layer.menu_layer),
-          &bounds, TEXT_FLOW_DEFAULT_INSET), NOOP);
-  const GTextAlignment align = PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft);
-  graphics_draw_text(ctx, section->title, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
-                     bounds, GTextOverflowModeTrailingEllipsis, align, title_attributes);
+  graphics_text_attributes_enable_screen_text_flow(title_attributes, MENU_HEADER_TEXT_INSET);
+
+  GRect title_box = bounds;
+  title_box.origin.y += (bounds.size.h - MENU_HEADER_LINE_HEIGHT) / 2;
+  title_box.size.h = MENU_HEADER_LINE_HEIGHT;
+
+  graphics_draw_text(ctx, section->title, title_font, title_box,
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, title_attributes);
   graphics_text_attributes_destroy(title_attributes);
+#else
+  bounds.origin.x += 2;
+  bounds.origin.y -= 1;
+  graphics_draw_text(ctx, section->title, title_font, bounds,
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+#endif
 }
 
 static void simply_menu_draw_row_spinner(SimplyMenu *self, GContext *ctx,
@@ -692,6 +869,45 @@ static void simply_menu_draw_row_spinner(SimplyMenu *self, GContext *ctx,
     graphics_draw_line(ctx, a, b);
   }
 }
+
+#if defined(MENU_ROUND_LAUNCHER_STYLE)
+static int32_t prv_isqrt(int32_t value) {
+  if (value <= 0) { return 0; }
+  int32_t rem = 0, root = 0;
+  for (int i = 0; i < 16; ++i) {
+    root <<= 1;
+    rem = (rem << 2) | ((value >> 30) & 3);
+    value <<= 2;
+    if (root < rem) {
+      rem -= ++root;
+      ++root;
+    }
+  }
+  return root >> 1;
+}
+
+//! How far in from the edge of the row its contents sit.
+//!
+//! PebbleOS insets each launcher row by the distance from the edge of the
+//! display to the edge of the circle at that row's own height, plus a fixed
+//! margin, which is what makes the column of icons and titles curve inwards
+//! towards the top and bottom of the list rather than run straight off the
+//! glass. See prv_draw_processed in the launcher's app_glance_structured.c;
+//! this is the same sum, x = R - sqrt(R^2 - (y - R)^2).
+static int16_t prv_round_row_inset(SimplyMenu *self, const Layer *cell_layer) {
+  Layer *root = window_get_root_layer(self->window.window);
+  const int16_t radius = layer_get_bounds(root).size.h / 2;
+  if (radius <= 0) { return MENU_ROUND_BASE_INSET; }
+
+  const GRect on_screen =
+      layer_convert_rect_to_screen((Layer *)cell_layer, layer_get_bounds((Layer *)cell_layer));
+  const int32_t from_middle = (on_screen.origin.y + on_screen.size.h / 2) - radius;
+
+  int32_t under_root = (int32_t) radius * radius - from_middle * from_middle;
+  if (under_root < 0) { under_root = 0; }   // a row dragged clean off the circle
+  return MENU_ROUND_BASE_INSET + (int16_t) (radius - prv_isqrt(under_root));
+}
+#endif
 
 static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
                                        MenuIndex *cell_index, void *data) {
@@ -773,15 +989,31 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
   MenuIndex current_selection = menu_layer_get_selected_index(self->menu_layer.menu_layer);
   const bool is_selected = (cell_index->section == current_selection.section &&
                            cell_index->row == current_selection.row);
+  const bool show_subtext = prv_shows_subtext(item, is_selected);
 
-  // If this is selected but scroll timer hasn't been started yet, start it
-  // Don't start if we're in idle state (timeout exceeded)
-  if (is_selected && !self->scroll_timer && !self->scrolling_active && !self->scroll_idle) {
-    start_scroll_timer(self, current_selection);
+  // Which row the marquee belongs to. Normally the selected one, but a finger
+  // can leave a row sitting in the middle of the screen without selecting it,
+  // and on a round watch that is the row being read, so it takes the marquee
+  // until the selection moves again.
+#ifdef SIMPLY_HAS_TOUCH
+  const bool is_marquee_row = self->scroll_index_pinned ?
+      (cell_index->section == self->scroll_index.section &&
+       cell_index->row == self->scroll_index.row) : is_selected;
+  const MenuIndex marquee_index = self->scroll_index_pinned ? self->scroll_index :
+                                                              current_selection;
+#else
+  const bool is_marquee_row = is_selected;
+  const MenuIndex marquee_index = current_selection;
+#endif
+
+  // If this row wants the marquee but the scroll timer hasn't been started
+  // yet, start it. Don't start if we're in idle state (timeout exceeded)
+  if (is_marquee_row && !self->scroll_timer && !self->scrolling_active && !self->scroll_idle) {
+    start_scroll_timer(self, marquee_index);
   }
 
   // Measure text width to determine if scrolling is needed
-  if (is_selected) {
+  if (is_marquee_row) {
     GRect bounds = layer_get_bounds(cell_layer);
     int16_t available_width = bounds.size.w;
 
@@ -792,6 +1024,17 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
       available_width -= (icon_rect.size.w + 8); // icon width + margins
     }
     available_width -= 10; // text margins
+#elif defined(MENU_ROUND_LAUNCHER_STYLE)
+    // ROUND, LAUNCHER STYLE: the same width the row is actually drawn into, so
+    // a title marquees exactly when it does not fit and not otherwise. The
+    // inset is the one this row's height on the circle earns it.
+    {
+      const int16_t row_inset = prv_round_row_inset(self, cell_layer);
+      available_width -= 2 * row_inset;
+      if (image && image->bitmap) {
+        available_width -= MENU_ROUND_ICON_BOX + MENU_ROUND_ICON_MARGIN;
+      }
+    }
 #else
     // ROUND DISPLAY: Account for icon height and margins
     // Icon is centered at top, text is below it
@@ -826,28 +1069,24 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
       subtitle_needs_scroll = subtitle_size.w > available_width;
     }
 
+    // And the third line, where this row shows one
+    bool subtext_needs_scroll = false;
+    int16_t subtext_width = 0;
+    if (show_subtext) {
+      GSize subtext_size = graphics_text_layout_get_content_size(
+          item->subtext, fonts_get_system_font(MENU_SUBTEXT_FONT_KEY),
+          GRect(0, 0, 1000, 100),
+          GTextOverflowModeTrailingEllipsis,
+          GTextAlignmentCenter);
+      subtext_width = subtext_size.w;
+      subtext_needs_scroll = subtext_size.w > available_width;
+    }
+
     // Set needs_scrolling flag and calculate max offset
 #if defined(PBL_ROUND)
     // For round displays: track independent scroll needs for title and subtitle
     self->title_needs_scroll = title_needs_scroll;
     self->subtitle_needs_scroll = subtitle_needs_scroll;
-
-    // Cache font heights to avoid expensive measurements during drawing
-    const GFont title_font_for_height = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
-    GSize title_height_size = graphics_text_layout_get_content_size(
-        "A", title_font_for_height, GRect(0, 0, 100, 100),
-        GTextOverflowModeFill, GTextAlignmentLeft);
-    self->title_height = title_height_size.h;
-
-    if (item->subtitle) {
-      const GFont subtitle_font_for_height = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-      GSize subtitle_height_size = graphics_text_layout_get_content_size(
-          "A", subtitle_font_for_height, GRect(0, 0, 100, 100),
-          GTextOverflowModeFill, GTextAlignmentLeft);
-      self->subtitle_height = subtitle_height_size.h;
-    } else {
-      self->subtitle_height = 0;
-    }
 
     if (title_needs_scroll) {
       self->title_max_scroll_offset = title_size.w - available_width + 40;
@@ -861,25 +1100,42 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
       self->subtitle_max_scroll_offset = 0;
     }
 
-    self->needs_scrolling = title_needs_scroll || subtitle_needs_scroll;
+    self->subtext_needs_scroll = subtext_needs_scroll;
+    self->subtext_max_scroll_offset =
+        subtext_needs_scroll ? (subtext_width - available_width + 40) : 0;
+
+    self->needs_scrolling = title_needs_scroll || subtitle_needs_scroll || subtext_needs_scroll;
 #else
     // For rectangular displays: use combined scroll offset
-    self->needs_scrolling = title_needs_scroll || subtitle_needs_scroll;
+    self->needs_scrolling = title_needs_scroll || subtitle_needs_scroll || subtext_needs_scroll;
     if (self->needs_scrolling) {
       // Calculate how far we need to scroll to show all text
       // Add extra padding (40px) to ensure the last word is fully visible
       int16_t max_title_scroll = title_needs_scroll ? (title_size.w - available_width + 40) : 0;
       int16_t max_subtitle_scroll = subtitle_needs_scroll ? (subtitle_width - available_width + 40) : 0;
+      int16_t max_subtext_scroll = subtext_needs_scroll ? (subtext_width - available_width + 40) : 0;
       self->max_scroll_offset = max_title_scroll > max_subtitle_scroll ?
           max_title_scroll : max_subtitle_scroll;
+      if (max_subtext_scroll > self->max_scroll_offset) {
+        self->max_scroll_offset = max_subtext_scroll;
+      }
     } else {
       self->max_scroll_offset = 0;
     }
 #endif
   }
 
-  // Use custom drawing when scrolling is needed (even if scroll_offset is 0, we need to draw with the correct fonts)
-  if (is_selected && self->needs_scrolling) {
+  // A launcher style round list draws every row itself, so the whole list is
+  // laid out the way the system app menu lays its own out. Everywhere else the
+  // custom path is only for the marquee row whose text has to be scrolled
+  // (even if scroll_offset is 0, we need to draw with the correct fonts).
+#if defined(MENU_ROUND_LAUNCHER_STYLE)
+  if (true) {
+#else
+  // A row with a third line is always drawn here: the system's cell drawing
+  // only knows two
+  if ((is_marquee_row && self->needs_scrolling) || show_subtext) {
+#endif
     // Manual drawing with scroll offset
     GRect bounds = layer_get_bounds(cell_layer);
     const bool is_highlighted = menu_cell_layer_is_highlighted(cell_layer);
@@ -893,13 +1149,15 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
 
 #if !defined(PBL_ROUND)
     // ===== RECTANGULAR DISPLAY: Scroll icon and text together =====
+    // Only the marquee row moves; another row is here for its third line
+    const int16_t scroll_offset = (is_marquee_row && self->needs_scrolling) ? self->scroll_offset : 0;
     int16_t text_x = 4;
     if (image && image->bitmap) {
       GRect icon_bounds = gbitmap_get_bounds(image->bitmap);
       graphics_context_set_compositing_mode(ctx, GCompOpSet);
       // Scroll the icon along with the text
       graphics_draw_bitmap_in_rect(ctx, image->bitmap,
-                                   GRect(4 - self->scroll_offset, (bounds.size.h - icon_bounds.size.h) / 2,
+                                   GRect(4 - scroll_offset, (bounds.size.h - icon_bounds.size.h) / 2,
                                         icon_bounds.size.w, icon_bounds.size.h));
       text_x = 4 + icon_bounds.size.w + 4;
     }
@@ -911,25 +1169,125 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
     graphics_context_set_text_color(ctx, gcolor8_get_or(text_color, is_highlighted ? GColorWhite : GColorBlack));
 
     // Text with scroll offset
-    const int16_t scroll_x = text_x - self->scroll_offset;
-    const int16_t text_w = bounds.size.w - text_x + self->scroll_offset;
+    const int16_t scroll_x = text_x - scroll_offset;
+    const int16_t text_w = bounds.size.w - text_x + scroll_offset;
 
-    if (item->subtitle) {
-      // Two lines - move UP 4 more pixels
+    if (item->subtitle || show_subtext) {
+      // Two or three lines - move UP 4 more pixels
       graphics_draw_text(ctx, item->title,
                         fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
                         GRect(scroll_x, -4, text_w, 24),
                         GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
-      graphics_draw_text(ctx, item->subtitle,
-                        fonts_get_system_font(FONT_KEY_GOTHIC_18),
-                        GRect(scroll_x, 20, text_w, 18),
-                        GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+      int16_t line_y = 20;
+      if (item->subtitle) {
+        graphics_draw_text(ctx, item->subtitle,
+                          fonts_get_system_font(FONT_KEY_GOTHIC_18),
+                          GRect(scroll_x, line_y, text_w, 18),
+                          GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+        line_y += 18;
+      }
+      if (show_subtext) {
+        graphics_draw_text(ctx, item->subtext,
+                          fonts_get_system_font(MENU_SUBTEXT_FONT_KEY),
+                          GRect(scroll_x, line_y, text_w, MENU_SUBTEXT_HEIGHT),
+                          GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+      }
     } else {
       // Single line - move DOWN, use vertical alignment
       graphics_draw_text(ctx, item->title,
                         fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
                         GRect(scroll_x, 4, text_w, bounds.size.h),
                         GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    }
+
+#elif defined(MENU_ROUND_LAUNCHER_STYLE)
+    // ===== ROUND, LAUNCHER STYLE: PebbleOS's own app menu row =====
+    // A horizontal pair: the icon centred in a fixed width box on the left,
+    // and beside it the title with the subtitle under it, the two of them
+    // centred against the row as a group. Left aligned, and the selection is
+    // the band of colour behind the row rather than a change of layout.
+    GColor8 text_color = is_highlighted ?
+        self->menu_layer.highlight_foreground :
+        self->menu_layer.normal_foreground;
+    graphics_context_set_text_color(ctx, gcolor8_get_or(text_color, is_highlighted ? GColorWhite : GColorBlack));
+
+    // Only the marquee row scrolls a title too long to fit; the rest of the
+    // list ends in an ellipsis so it is not a wall of moving text
+    const bool marquee_title = is_marquee_row && self->title_needs_scroll;
+    const bool marquee_subtitle = is_marquee_row && self->subtitle_needs_scroll;
+    const bool marquee_subtext = is_marquee_row && show_subtext && self->subtext_needs_scroll;
+
+    // The row follows the curve of the glass, and inside whatever room that
+    // leaves, the icon box is a fixed width whatever the icon is, so every
+    // title in a list of them starts at the same distance from the icon.
+    // A list with no icons at all, which is what the main menu and the
+    // settings lists are, has no gutter to line up against, so its rows are
+    // centred in the room the curve leaves rather than pushed against the left
+    // of an empty column.
+    const int16_t inset = prv_round_row_inset(self, cell_layer);
+    const bool has_icon = (image && image->bitmap);
+    const int16_t icon_x = inset;
+    const int16_t text_x =
+        has_icon ? (inset + MENU_ROUND_ICON_BOX + MENU_ROUND_ICON_MARGIN) : inset;
+    int16_t text_width = bounds.size.w - inset - text_x;
+    if (text_width < 1) { text_width = 1; }
+
+    const int16_t subtitle_block =
+        item->subtitle ? MENU_ROUND_SUBTITLE_HEIGHT : 0;
+    const int16_t subtext_block = show_subtext ? MENU_SUBTEXT_HEIGHT : 0;
+    // The launcher lifts the title a pixel off the centre of the pair
+    const int16_t text_y =
+        (bounds.size.h - (MENU_ROUND_TITLE_HEIGHT + subtitle_block + subtext_block)) / 2 - 1;
+
+    // A marqueeing line is positioned by its own offset, so it is drawn from
+    // the left whatever the row's alignment would otherwise be
+    const GTextAlignment align =
+        has_icon ? GTextAlignmentLeft : GTextAlignmentCenter;
+
+    graphics_draw_text(ctx, item->title, fonts_get_system_font(MENU_ROUND_TITLE_FONT_KEY),
+                       GRect(text_x - (marquee_title ? self->title_scroll_offset : 0), text_y,
+                             marquee_title ? 2000 : text_width, MENU_ROUND_TITLE_HEIGHT + 4),
+                       GTextOverflowModeTrailingEllipsis,
+                       marquee_title ? GTextAlignmentLeft : align, NULL);
+
+    if (item->subtitle) {
+      graphics_draw_text(ctx, item->subtitle,
+                         fonts_get_system_font(MENU_ROUND_SUBTITLE_FONT_KEY),
+                         GRect(text_x - (marquee_subtitle ? self->subtitle_scroll_offset : 0),
+                               text_y + MENU_ROUND_TITLE_HEIGHT,
+                               marquee_subtitle ? 2000 : text_width,
+                               MENU_ROUND_SUBTITLE_HEIGHT + 4),
+                         GTextOverflowModeTrailingEllipsis,
+                         marquee_subtitle ? GTextAlignmentLeft : align, NULL);
+    }
+
+    if (show_subtext) {
+      graphics_draw_text(ctx, item->subtext,
+                         fonts_get_system_font(MENU_SUBTEXT_FONT_KEY),
+                         GRect(text_x - (marquee_subtext ? self->subtext_scroll_offset : 0),
+                               text_y + MENU_ROUND_TITLE_HEIGHT + subtitle_block,
+                               marquee_subtext ? 2000 : text_width,
+                               MENU_SUBTEXT_HEIGHT + 4),
+                         GTextOverflowModeTrailingEllipsis,
+                         marquee_subtext ? GTextAlignmentLeft : align, NULL);
+    }
+
+    // Marqueed text runs left past where it started, which is straight through
+    // the icon. There is no clip rectangle to draw text into, so the icon box
+    // is painted back over in the row's own colour before the icon goes down.
+    if (has_icon && (marquee_title || marquee_subtitle || marquee_subtext)) {
+      graphics_fill_rect(ctx, GRect(0, 0, text_x - MENU_ROUND_ICON_MARGIN, bounds.size.h),
+                         0, GCornerNone);
+    }
+
+    if (has_icon) {
+      const GRect icon_bounds = gbitmap_get_bounds(image->bitmap);
+      graphics_context_set_compositing_mode(ctx, GCompOpSet);
+      graphics_draw_bitmap_in_rect(
+          ctx, image->bitmap,
+          GRect(icon_x + (MENU_ROUND_ICON_BOX - icon_bounds.size.w) / 2,
+                (bounds.size.h - icon_bounds.size.h) / 2,
+                icon_bounds.size.w, icon_bounds.size.h));
     }
 
 #else
@@ -951,78 +1309,54 @@ static void prv_menu_draw_row_callback(GContext *ctx, const Layer *cell_layer,
       icon_y += icon_bounds.size.h;
     }
 
-    // For round display scrolling, we need to draw text in a much wider rect
-    // so that when we apply scroll offset, the text moves through the visible area
-    const int16_t text_rect_width = 2000; // very wide rect for scrolling
-    const int16_t text_center_x = bounds.size.w / 2;
-    const int16_t visible_width = bounds.size.w;
+    // Each line is centred when it fits. On the marquee row a line that does
+    // not is drawn from a small left margin in a rect wide enough for all of
+    // it, and moved by its own offset; every other row only gets here for its
+    // third line, and nothing on it moves.
+    const int16_t text_rect_width = 2000;
     const int16_t left_margin = 8; // Small left margin so text doesn't start cut off
+    const bool is_marquee = is_marquee_row && self->needs_scrolling;
 
-    if (item->subtitle) {
-      // Two lines of text
-      // Use system theme fonts for round displays (Medium content size):
-      // - Title: GOTHIC_24_BOLD
-      // - Subtitle: GOTHIC_18
-      const GFont title_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
-      const GFont subtitle_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+    const char *texts[3] = { item->title, item->subtitle, show_subtext ? item->subtext : NULL };
+    const GFont fonts[3] = {
+      fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD),
+      fonts_get_system_font(FONT_KEY_GOTHIC_18),
+      fonts_get_system_font(MENU_SUBTEXT_FONT_KEY),
+    };
+    const bool scrolls[3] = {
+      is_marquee && self->title_needs_scroll,
+      is_marquee && self->subtitle_needs_scroll,
+      is_marquee && self->subtext_needs_scroll,
+    };
+    const int16_t offsets[3] = {
+      self->title_scroll_offset, self->subtitle_scroll_offset, self->subtext_scroll_offset,
+    };
 
-      // Use cached font heights (measured once during measurement phase, not every frame)
-      const int16_t title_height = self->title_height;
-      const int16_t subtitle_height = self->subtitle_height;
-      const int16_t total_text_height = title_height + subtitle_height + 2;
-      const int16_t text_start_y = icon_y + (bounds.size.h - icon_y - total_text_height) / 2;
+    int16_t heights[3] = { 0, 0, 0 };
+    int16_t total_text_height = 0;
+    int16_t lines = 0;
+    for (int i = 0; i < 3; ++i) {
+      if (!texts[i]) { continue; }
+      heights[i] = graphics_text_layout_get_content_size(
+          "A", fonts[i], GRect(0, 0, 100, 100), GTextOverflowModeFill, GTextAlignmentLeft).h;
+      total_text_height += heights[i] + (lines ? 2 : 0);
+      lines++;
+    }
 
-      // Draw title - either centered (if fits) or scrolling (if too long)
-      if (self->title_needs_scroll) {
-        // Title is too long - scroll it with left margin
-        graphics_draw_text(ctx, item->title,
-                          title_font,
-                          GRect(bounds.origin.x + left_margin - self->title_scroll_offset, text_start_y, text_rect_width, title_height),
+    int16_t line_y = icon_y + (bounds.size.h - icon_y - total_text_height) / 2;
+    for (int i = 0; i < 3; ++i) {
+      if (!texts[i]) { continue; }
+      if (scrolls[i]) {
+        graphics_draw_text(ctx, texts[i], fonts[i],
+                          GRect(bounds.origin.x + left_margin - offsets[i], line_y,
+                                text_rect_width, heights[i]),
                           GTextOverflowModeFill, GTextAlignmentLeft, NULL);
       } else {
-        // Title fits - draw it centered
-        graphics_draw_text(ctx, item->title,
-                          title_font,
-                          GRect(bounds.origin.x, text_start_y, bounds.size.w, title_height),
+        graphics_draw_text(ctx, texts[i], fonts[i],
+                          GRect(bounds.origin.x, line_y, bounds.size.w, heights[i]),
                           GTextOverflowModeFill, GTextAlignmentCenter, NULL);
       }
-
-      // Draw subtitle - either centered (if fits) or scrolling (if too long)
-      if (self->subtitle_needs_scroll) {
-        // Subtitle is too long - scroll it with left margin
-        graphics_draw_text(ctx, item->subtitle,
-                          subtitle_font,
-                          GRect(bounds.origin.x + left_margin - self->subtitle_scroll_offset, text_start_y + title_height + 2, text_rect_width, subtitle_height),
-                          GTextOverflowModeFill, GTextAlignmentLeft, NULL);
-      } else {
-        // Subtitle fits - draw it centered
-        graphics_draw_text(ctx, item->subtitle,
-                          subtitle_font,
-                          GRect(bounds.origin.x, text_start_y + title_height + 2, bounds.size.w, subtitle_height),
-                          GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-      }
-    } else {
-      // Single line of text
-      const GFont title_font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
-
-      // Use cached font height (measured once during measurement phase, not every frame)
-      const int16_t text_height = self->title_height;
-      const int16_t text_start_y = icon_y + (bounds.size.h - icon_y - text_height) / 2;
-
-      // Draw title - either centered (if fits) or scrolling (if too long)
-      if (self->title_needs_scroll) {
-        // Title is too long - scroll it with left margin
-        graphics_draw_text(ctx, item->title,
-                          title_font,
-                          GRect(bounds.origin.x + left_margin - self->title_scroll_offset, text_start_y, text_rect_width, text_height),
-                          GTextOverflowModeFill, GTextAlignmentLeft, NULL);
-      } else {
-        // Title fits - draw it centered
-        graphics_draw_text(ctx, item->title,
-                          title_font,
-                          GRect(bounds.origin.x, text_start_y, bounds.size.w, text_height),
-                          GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-      }
+      line_y += heights[i] + 2;
     }
 #endif
   } else {
@@ -1102,6 +1436,193 @@ static void prv_menu_select_click_callback(MenuLayer *menu_layer, MenuIndex *cel
   prv_send_menu_select_click(cell_index->section, cell_index->row);
 }
 
+// ---- Touch -----------------------------------------------------------------
+//
+// A MenuLayer renders itself and does not expose cell frames, so mapping a
+// finger to a row means recomputing the layout the same way the layer's own
+// callbacks declare it. The scroll offset comes from the MenuLayer's
+// ScrollLayer, so this stays correct however far the list has scrolled.
+
+#ifdef SIMPLY_HAS_TOUCH
+
+// Cell metrics must mirror exactly what the MenuLayer uses, which is what its
+// get_cell_height callback says
+static int16_t prv_touch_cell_height(SimplyMenu *self, MenuIndex index) {
+  return prv_row_height(self, &index,
+                        menu_layer_is_index_selected(self->menu_layer.menu_layer, &index));
+}
+
+//! How many rows a section holds, mirroring prv_menu_get_num_rows_callback:
+//! a section not yet loaded reports 1 row
+static uint16_t prv_section_rows(SimplyMenu *self, uint16_t section_index) {
+  SimplyMenuSection *section = prv_get_menu_section(self, section_index);
+  return section ? section->num_items : 1;
+}
+
+//! Which row sits at a given point down the content, if any
+static bool prv_row_at_content_y(SimplyMenu *self, int content_y, MenuIndex *index_out) {
+  if (content_y < 0) { return false; }
+
+  int cursor = 0;
+  const uint16_t num_sections = self->menu_layer.num_sections;
+  for (uint16_t s = 0; s < num_sections; ++s) {
+    const uint16_t num_items = prv_section_rows(self, s);
+    const int header = prv_header_height(self, s);
+    if (content_y < cursor + header) {
+      return false;                        // the header itself is not a target
+    }
+    cursor += header;
+
+    for (uint16_t r = 0; r < num_items; ++r) {
+      MenuIndex index = { .section = s, .row = r };
+      const int height = prv_touch_cell_height(self, index);
+      if (content_y < cursor + height) {
+        *index_out = index;
+        return true;
+      }
+      cursor += height;
+    }
+  }
+
+  return false;                            // past the last row
+}
+
+static bool prv_touch_hit_test(SimplyMenu *self, int16_t x, int16_t y,
+                               MenuIndex *index_out) {
+  (void) x;
+  if (!self || !self->menu_layer.menu_layer) { return false; }
+
+  MenuLayer *menu_layer = self->menu_layer.menu_layer;
+  Layer *layer = menu_layer_get_layer(menu_layer);
+  GRect frame = layer_get_frame(layer);
+  ScrollLayer *scroll_layer = menu_layer_get_scroll_layer(menu_layer);
+  GPoint offset =
+      scroll_layer ? scroll_layer_get_content_offset(scroll_layer) : GPointZero;
+
+  // Screen coordinates to content coordinates. The offset is negative once
+  // the list has scrolled, which is why it is subtracted rather than added
+  return prv_row_at_content_y(self, y - frame.origin.y - offset.y, index_out);
+}
+
+#if defined(PBL_ROUND)
+//! Where the list may be dragged to, in scroll offset terms.
+//!
+//! A centre focused menu holds the selected row in the middle of the screen,
+//! so the ends of the list sit half a screen beyond where a rectangular list
+//! would stop: the first row still has to come down to the middle, and the last
+//! row still has to come up to it. Clamping a drag to the rectangular range,
+//! which is what a scroll layer reports, is why a finger could only cover a
+//! fraction of a list the buttons walked from end to end.
+static void prv_round_scroll_limits(SimplyMenu *self, int16_t frame_height,
+                                    int *min_out, int *max_out) {
+  const int unfocused = MENU_ROUND_UNFOCUSED_HEIGHT;
+  const int middle = frame_height / 2;
+
+  int headers = 0;
+  int first_header = 0;
+  int rows = 0;
+  MenuIndex last = { .section = 0, .row = 0 };
+  const uint16_t num_sections = self->menu_layer.num_sections;
+  for (uint16_t sec = 0; sec < num_sections; ++sec) {
+    const int header = prv_header_height(self, sec);
+    if (sec == 0) { first_header = header; }
+    headers += header;
+    const uint16_t section_rows = prv_section_rows(self, sec);
+    rows += section_rows;
+    if (section_rows) {
+      last = (MenuIndex) { .section = sec, .row = section_rows - 1 };
+    }
+  }
+  if (rows < 1) { rows = 1; }
+
+  // Each end row as it is when focused, which is taller if it has a third line
+  MenuIndex first = { .section = 0, .row = 0 };
+  const int first_focused = prv_row_height(self, &first, true);
+  const int last_focused = prv_row_height(self, &last, true);
+
+  // The first row centred: everything above it is its own header
+  *max_out = middle - first_header - first_focused / 2;
+  // The last row centred: everything above it is every header and every other
+  // row, each of those drawn at its unfocused height
+  *min_out = middle - headers - (rows - 1) * unfocused - last_focused / 2;
+  if (*min_out > *max_out) { *min_out = *max_out; }
+}
+#endif
+
+void simply_menu_marquee_at(SimplyMenu *self, int scroll_offset_y) {
+  if (!self || !self->menu_layer.menu_layer) { return; }
+
+  const GRect frame = layer_get_frame(menu_layer_get_layer(self->menu_layer.menu_layer));
+  MenuIndex index;
+  if (!prv_row_at_content_y(self, frame.size.h / 2 - scroll_offset_y, &index)) { return; }
+
+  MenuIndex current = menu_layer_get_selected_index(self->menu_layer.menu_layer);
+  const bool is_selection = (index.section == current.section && index.row == current.row);
+
+  // Nothing to do if the row under the middle is the selected one already: the
+  // marquee is on it, and restarting the timer would only make it wait again
+  if (is_selection && !self->scroll_index_pinned) { return; }
+  if (self->scroll_index_pinned && index.section == self->scroll_index.section &&
+      index.row == self->scroll_index.row) {
+    return;
+  }
+
+  start_scroll_timer(self, index);
+  self->scroll_index_pinned = !is_selection;
+  // The idle timeout stops a list marqueeing forever after it has been left
+  // alone; a finger on the screen is the wearer paying attention again
+  self->scroll_idle = false;
+  self->last_input_time = time(NULL);
+}
+
+bool simply_menu_scroll_limits(SimplyMenu *self, int *min_y, int *max_y) {
+#if defined(PBL_ROUND)
+  if (!self || !self->menu_layer.menu_layer) { return false; }
+  const GRect frame = layer_get_frame(menu_layer_get_layer(self->menu_layer.menu_layer));
+  prv_round_scroll_limits(self, frame.size.h, min_y, max_y);
+  return true;
+#else
+  // Rectangular menus scroll between the top of the content and the bottom of
+  // it, which is what a scroll layer works out for itself
+  return false;
+#endif
+}
+
+static bool prv_touch_activate(SimplyMenu *self, int16_t x, int16_t y,
+                               bool long_click) {
+  MenuIndex index;
+  if (!prv_touch_hit_test(self, x, y, &index)) { return false; }
+  // Move the highlight first so the screen agrees with what is about to
+  // happen, then fire the same event the matching button action would
+  menu_layer_set_selected_index(self->menu_layer.menu_layer, index,
+                                MenuRowAlignNone, false);
+  simply_menu_touch_note_input(self);
+  if (long_click) {
+    prv_send_menu_select_long_click(index.section, index.row);
+  } else {
+    prv_send_menu_select_click(index.section, index.row);
+  }
+  return true;
+}
+
+bool simply_menu_handle_tap(SimplyMenu *self, int16_t x, int16_t y) {
+  return prv_touch_activate(self, x, y, false);
+}
+
+bool simply_menu_handle_long_press(SimplyMenu *self, int16_t x, int16_t y) {
+  return prv_touch_activate(self, x, y, true);
+}
+
+void simply_menu_touch_note_input(SimplyMenu *self) {
+  if (!self) { return; }
+#if !defined(PBL_PLATFORM_APLITE)
+  self->last_input_time = time(NULL);
+  self->scroll_idle = false;
+#endif
+}
+
+#endif  // SIMPLY_HAS_TOUCH
+
 static void prv_menu_select_long_click_callback(MenuLayer *menu_layer, MenuIndex *cell_index,
                                                 void *data) {
 #if !defined(PBL_PLATFORM_APLITE)
@@ -1148,7 +1669,8 @@ static void prv_menu_window_load(Window *window) {
     .get_num_sections = prv_menu_get_num_sections_callback,
     .get_num_rows = prv_menu_get_num_rows_callback,
     .get_header_height = prv_menu_get_header_height_callback,
-#if defined(PBL_ROUND)
+    // Not on aplite, whose rows never grow: it does not draw a third line
+#if !defined(PBL_PLATFORM_APLITE)
     .get_cell_height = prv_menu_get_cell_height_callback,
 #endif
     .draw_header = prv_menu_draw_header_callback,
@@ -1309,6 +1831,9 @@ static void prv_handle_menu_item_packet(Simply *simply, Packet *data) {
     .item = packet->item,
     .title = packet->title_length ? strdup2(packet->buffer) : NULL,
     .subtitle = packet->subtitle_length ? strdup2(packet->buffer + packet->title_length + 1) : NULL,
+    // Each string is followed by its terminator, empty or not
+    .subtext = packet->subtext_length ?
+        strdup2(packet->buffer + packet->title_length + 1 + packet->subtitle_length + 1) : NULL,
     .icon = packet->icon,
   };
   simply_menu_add_item(simply->menu, item);
@@ -1381,8 +1906,10 @@ SimplyMenu *simply_menu_create(Simply *simply) {
     .subtitle_max_scroll_offset = 0,
     .subtitle_needs_scroll = false,
     .subtitle_scrolling_active = false,
-    .title_height = 0,
-    .subtitle_height = 0,
+    .subtext_scroll_offset = 0,
+    .subtext_max_scroll_offset = 0,
+    .subtext_needs_scroll = false,
+    .subtext_scrolling_active = false,
 #endif
 #endif
   };

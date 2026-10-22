@@ -83,6 +83,7 @@ var MainMenuPage = {
                 items.push({
                     title: service.getName(),
                     subtitle: WeatherManager.getProviderSummary(providerId),
+                    subtext: this._forecastLine(providerId),
                     providerId: providerId,
                     icon: IconMapper.getIconForProvider(providerId, data)
                 });
@@ -101,6 +102,16 @@ var MainMenuPage = {
     },
 
     /**
+     * Rebuild every row, for when the providers shown or their order change
+     */
+    rebuild: function() {
+        if (!this.menu) {
+            return;
+        }
+        this.menu.items(0, this._buildMenuSections()[0].items);
+    },
+
+    /**
      * Update a specific provider's menu item
      * @param {string} providerId - Provider to update
      */
@@ -108,18 +119,22 @@ var MainMenuPage = {
         var log = helpers.log;
         var appState = AppState.getInstance();
 
-        if (!this.menu) {
+        if (!this.menu || providerId === 'settings') {
             return;
         }
 
-        var providerOrder = WeatherManager.getProviderOrder();
-        var itemIndex = providerOrder.indexOf(providerId);
+        // Found by provider rather than by position in the provider order,
+        // so a row is never written over another one while the order changes
+        var itemIndex = -1;
+        var items = this.menu.items(0) || [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].providerId === providerId) {
+                itemIndex = i;
+                break;
+            }
+        }
 
         if (itemIndex === -1) {
-            return;
-        }
-
-        if (providerId === 'settings') {
             return;
         }
 
@@ -129,9 +144,30 @@ var MainMenuPage = {
         this.menu.item(0, itemIndex, {
             title: WeatherManager.getService(providerId).getName(),
             subtitle: subtitle,
+            subtext: this._forecastLine(providerId),
             providerId: providerId,
             icon: IconMapper.getIconForProvider(providerId, appState.getWeatherData(providerId))
         });
+    },
+
+    /**
+     * The forecast for a provider's third line, or undefined for none: when
+     * it is switched off, when Quick Glance already shows the forecast, or
+     * before the provider has any weather. The last forecast stays up while a
+     * refresh is fetching, so rows do not change height with every refresh.
+     * @private
+     */
+    _forecastLine: function(providerId) {
+        var appState = AppState.getInstance();
+        if (!appState.mainMenuForecast || appState.quickGlance === Constants.quickGlance.FORECAST) {
+            return undefined;
+        }
+        var data = appState.getWeatherData(providerId);
+        if (!data) {
+            return undefined;
+        }
+        var period = data.forecastPeriods && data.forecastPeriods[0];
+        return (period && period.shortForecast) || data.conditions || undefined;
     },
 
     /**

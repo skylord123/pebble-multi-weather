@@ -47,6 +47,47 @@ class OpenWeatherService extends WeatherService {
         return this.baseUrl + '/onecall?' + params.join('&');
     }
 
+    /**
+     * Check an API key without storing it. Asks One Call 3.0 for the current
+     * conditions only, so a key without the One Call subscription fails here
+     * the same way it would on the watch.
+     * @param {string} apiKey - Key to try
+     * @param {number} latitude
+     * @param {number} longitude
+     * @param {Function} callback - Called with { ok: true } or { ok: false, error: { code, message } }
+     */
+    testApiKey(apiKey, latitude, longitude, callback) {
+        var params = [
+            'lat=' + latitude.toFixed(4),
+            'lon=' + longitude.toFixed(4),
+            'appid=' + encodeURIComponent(apiKey),
+            'exclude=minutely,hourly,daily,alerts'
+        ];
+
+        // Not logged: the URL carries the key
+        ajax({
+            url: this.baseUrl + '/onecall?' + params.join('&'),
+            type: 'json'
+        }, function() {
+            callback({ ok: true });
+        }, function(body, status) {
+            var message = body && typeof body === 'object' && body.message ? body.message : null;
+            if (status === 401) {
+                callback({ ok: false, error: { code: 'invalid_key',
+                    message: message || 'OpenWeatherMap did not accept this API key' } });
+            } else if (status === 429) {
+                callback({ ok: false, error: { code: 'rate_limited',
+                    message: message || 'Too many requests to OpenWeatherMap. Try again later.' } });
+            } else if (!status) {
+                callback({ ok: false, error: { code: 'unreachable',
+                    message: 'Could not reach OpenWeatherMap' } });
+            } else {
+                callback({ ok: false, error: { code: 'provider_error',
+                    message: message || 'OpenWeatherMap answered with HTTP ' + status } });
+            }
+        });
+    }
+
     fetchWeather(latitude, longitude, onSuccess, onError) {
         var self = this;
         var log = helpers.log;
@@ -123,13 +164,17 @@ class OpenWeatherService extends WeatherService {
         }, function(err, status) {
             log('OpenWeather: Request error - ' + err + ' (status: ' + status + ')');
 
+            // OpenWeatherMap's own message says why: most often a key that
+            // works but has no One Call 3.0 subscription, or is not active yet
+            var apiMessage = err && typeof err === 'object' && err.message ? String(err.message) : null;
+
             // Handle specific error codes
             if (status === 401) {
                 var authErr = {
                     isApiError: true,
                     type: 'InvalidApiKey',
-                    title: 'Invalid API Key',
-                    detail: 'Your OpenWeatherMap API key is invalid. Please check your settings.'
+                    title: 'API Key Not Accepted',
+                    detail: apiMessage || 'Your OpenWeatherMap API key is invalid. Please check your settings.'
                 };
                 onError(authErr);
                 return;
@@ -143,6 +188,11 @@ class OpenWeatherService extends WeatherService {
                     detail: 'Too many API requests. Please try again later.'
                 };
                 onError(rateErr);
+                return;
+            }
+
+            if (apiMessage) {
+                onError({ isApiError: true, type: 'ApiError', title: 'API Error', detail: apiMessage });
                 return;
             }
 
@@ -213,7 +263,13 @@ class OpenWeatherService extends WeatherService {
         for (var i = 0; i < daily.length; i++) {
             var day = daily[i];
             var weather = day.weather && day.weather[0] ? day.weather[0] : {};
-            var startTime = day.dt ? day.dt * 1000 : null;
+            // dt is midday; the day runs from the midnight before it
+            var startTime = null;
+            if (day.dt) {
+                var midnight = new Date(day.dt * 1000);
+                midnight.setHours(0, 0, 0, 0);
+                startTime = midnight.getTime();
+            }
             var endTime = startTime ? startTime + 24 * 60 * 60 * 1000 : null;
 
             periods.push({
