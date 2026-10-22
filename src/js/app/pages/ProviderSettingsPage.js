@@ -128,6 +128,14 @@ var ProviderSettingsPage = {
 
         // Refresh main menu with new enabled list
         this._refreshMainMenu();
+
+        // A provider just switched on has nothing to show until it is fetched
+        if (!current) {
+            var done = function() {
+                require('app/pages/MainMenuPage').updateProvider(providerId);
+            };
+            WeatherManager.fetchFromProvider(providerId, done, done);
+        }
     },
 
     _findMenuIndex: function(providerId) {
