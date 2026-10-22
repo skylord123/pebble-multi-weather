@@ -4,6 +4,7 @@
     "configurable"
   ],
   "companyName": "skylar.tech",
+  "configPage": "config.html",
   "longName": "Multi Weather",
   "resources": {
     "media": [
