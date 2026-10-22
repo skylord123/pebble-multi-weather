@@ -4,7 +4,7 @@
 
 var Constants = {
     // App info
-    appVersion: '1.2',
+    appVersion: '1.3',
     appName: 'Multi Weather',
 
     // Config page settings
