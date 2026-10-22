@@ -248,7 +248,7 @@ var helpers = {
         if (typeof value === 'number') {
             return value;
         }
-        var matches = value.toString().match(/[\\d.]+/g);
+        var matches = value.toString().match(/[\d.]+/g);
         if (!matches || !matches.length) {
             return null;
         }
