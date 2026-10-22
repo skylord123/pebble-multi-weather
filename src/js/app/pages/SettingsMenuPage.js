@@ -10,8 +10,6 @@ var helpers = require('app/helpers');
 var ProviderSettingsPage = require('app/pages/ProviderSettingsPage');
 var QuickGlanceSettingsPage = require('app/pages/QuickGlanceSettingsPage');
 var ForecastSubtitleSettingsPage = require('app/pages/ForecastSubtitleSettingsPage');
-var WeatherManager = require('app/services/WeatherManager');
-var IconMapper = require('app/IconMapper');
 var MenuTheme = require('app/ui/MenuTheme');
 var Touch = require('ui/touch');
 
@@ -317,33 +315,8 @@ var SettingsMenuPage = {
     },
 
     _refreshMainMenu: function() {
-        var appState = AppState.getInstance();
-        if (!appState.mainMenu) {
-            return;
-        }
-
-        var providerOrder = WeatherManager.getProviderOrder();
-        var items = [];
-
-        for (var i = 0; i < providerOrder.length; i++) {
-            var providerId = providerOrder[i];
-            var service = WeatherManager.getService(providerId);
-            if (service) {
-                items.push({
-                    title: service.getName(),
-                    subtitle: WeatherManager.getProviderSummary(providerId),
-                    providerId: providerId,
-                    icon: IconMapper.getIconForProvider(providerId, appState.getWeatherData(providerId))
-                });
-            }
-        }
-
-        items.push({
-            title: 'Settings',
-            providerId: 'settings'
-        });
-
-        appState.mainMenu.items(0, items);
+        // Required here: MainMenuPage requires this page
+        require('app/pages/MainMenuPage').rebuild();
     }
 };
 
