@@ -197,8 +197,10 @@ static void destroy_element(SimplyStage *self, SimplyElementCommon *element) {
 
 static void destroy_animation(SimplyStage *self, SimplyAnimation *animation) {
   if (!animation) { return; }
-  property_animation_destroy(animation->animation);
+  // Unlinked first: destroying a running animation stops it, and the stopped
+  // handler would otherwise find it in the list and free it a second time
   list1_remove(&self->stage_layer.animations, &animation->node);
+  property_animation_destroy(animation->animation);
   free(animation);
 }
 
