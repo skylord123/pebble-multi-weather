@@ -217,19 +217,20 @@ var SettingsManager = {
         },
         function(e) {
             log('Settings page closed');
-            log('Returned settings: ' + JSON.stringify(e.options));
-            Settings.option(e.options);
 
+            // Closed without saving: nothing changed, so nothing to reload
+            // or fetch again
             if (e.failed) {
-                log('Settings error: ' + e.response);
+                log('Settings not saved: ' + e.response);
+                return;
             }
 
-            // Reload settings
-            self.load();
-
-            // Call the callback if provided
+            // Settings has already stored what the page returned
+            log('Returned settings: ' + JSON.stringify(e.options));
             if (options.onSettingsChanged) {
                 options.onSettingsChanged();
+            } else {
+                self.load();
             }
         });
     }

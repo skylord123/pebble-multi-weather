@@ -281,11 +281,12 @@ var ConfigBridge = {
      * Merge options into the store and apply them
      */
     applySettings: function(settings) {
-        var SettingsManager = require('app/SettingsManager');
         Settings.option(settings);
-        SettingsManager.load();
+        // onSettingsChanged loads the settings itself
         if (typeof this.onSettingsChanged === 'function') {
             this.onSettingsChanged();
+        } else {
+            require('app/SettingsManager').load();
         }
     },
 
