@@ -903,13 +903,22 @@ var MessageQueue = function() {
 
   this._consume = this.consume.bind(this);
   this._cycle = this.cycle.bind(this);
+  this._retry = this.retry.bind(this);
+  this._retryDelay = 0;
 };
+
+// A failed send is tried again after a pause that doubles up to a few
+// seconds: retrying at once spun the phone for as long as the watch was
+// out of reach
+MessageQueue.RETRY_MIN_MS = 100;
+MessageQueue.RETRY_MAX_MS = 5000;
 
 MessageQueue.prototype.stop = function() {
   this._sending = false;
 };
 
 MessageQueue.prototype.consume = function() {
+  this._retryDelay = 0;
   this._queue.shift();
   if (this._queue.length === 0) {
     return this.stop();
@@ -935,8 +944,14 @@ MessageQueue.prototype.cycle = function() {
   }
   this._sent = head;
   var success = this.checkSent(head, this._consume);
-  var failure = this.checkSent(head, this._cycle);
+  var failure = this.checkSent(head, this._retry);
   Pebble.sendAppMessage(head, success, failure);
+};
+
+MessageQueue.prototype.retry = function() {
+  this._retryDelay = Math.min(MessageQueue.RETRY_MAX_MS,
+      Math.max(MessageQueue.RETRY_MIN_MS, this._retryDelay * 2));
+  setTimeout(this._cycle, this._retryDelay);
 };
 
 MessageQueue.prototype.send = function(message) {
