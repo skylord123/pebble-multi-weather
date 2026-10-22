@@ -72,9 +72,10 @@ struct SimplyMenu {
   int16_t subtitle_max_scroll_offset;
   bool subtitle_needs_scroll;
   bool subtitle_scrolling_active;
-  // Cached font heights to avoid expensive measurements every frame
-  int16_t title_height;
-  int16_t subtitle_height;
+  int16_t subtext_scroll_offset;
+  int16_t subtext_max_scroll_offset;
+  bool subtext_needs_scroll;
+  bool subtext_scrolling_active;
 #endif
 #endif
 };
@@ -110,6 +111,10 @@ typedef struct SimplyMenuItem SimplyMenuItem;
 struct SimplyMenuItem {
   SimplyMenuCommonMember;
   char *subtitle;
+  //! A third line under the subtitle. Every row on a rectangular watch shows
+  //! it, growing taller where it has to; on a round watch only the focused
+  //! row does, so the rest of the list stays compact.
+  char *subtext;
   uint32_t icon;
   uint16_t item;
 };

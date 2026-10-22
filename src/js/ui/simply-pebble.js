@@ -611,8 +611,10 @@ var MenuItemPacket = new struct([
   ['uint32', 'icon', ImageType],
   ['uint16', 'titleLength', StringLengthType],
   ['uint16', 'subtitleLength', StringLengthType],
+  ['uint16', 'subtextLength', StringLengthType],
   ['cstring', 'title', StringType],
   ['cstring', 'subtitle', StringType],
+  ['cstring', 'subtext', StringType],
 ]);
 
 var MenuGetItemPacket = new struct([
@@ -1285,8 +1287,10 @@ SimplyPebble.menuItem = function(section, item, def) {
     .icon(def.icon)
     .titleLength(def.title)
     .subtitleLength(def.subtitle)
+    .subtextLength(def.subtext)
     .title(def.title)
-    .subtitle(def.subtitle);
+    .subtitle(def.subtitle)
+    .subtext(def.subtext);
   SimplyPebble.sendPacket(MenuItemPacket);
 };
 
