@@ -195,12 +195,6 @@ function writeSnapshot(view) {
 
 /** The watch app's cached weather for a provider, as a snapshot, if it is for this place */
 function fromAppCache(providerId, place) {
-    var appPlace = {
-        latitude: number(Settings.option('cached_latitude')),
-        longitude: number(Settings.option('cached_longitude'))
-    };
-    if (!samePlace(appPlace, place)) { return null; }
-
     var cached = Settings.option(Constants.cachePrefix + providerId);
     try {
         if (typeof cached === 'string') { cached = JSON.parse(cached); }
@@ -208,6 +202,13 @@ function fromAppCache(providerId, place) {
         return null;
     }
     if (!cached || !cached.data || !cached.timestamp) { return null; }
+
+    // Entries the app saved before it recorded their place fall back on its
+    // last known location, which may be from a later fetch
+    var appPlace = typeof cached.latitude === 'number' && typeof cached.longitude === 'number'
+        ? { latitude: cached.latitude, longitude: cached.longitude }
+        : { latitude: number(Settings.option('cached_latitude')), longitude: number(Settings.option('cached_longitude')) };
+    if (!samePlace(appPlace, place)) { return null; }
     try {
         return snapshot(providerId, cached.data, appPlace, cached.timestamp);
     } catch (e) {
