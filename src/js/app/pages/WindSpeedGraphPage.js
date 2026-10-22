@@ -115,7 +115,8 @@ var WindSpeedGraphPage = {
     },
 
     _parseWindSpeed: function(speed) {
-        if (!speed) {
+        // Not !speed: a calm 0 is a reading, not a missing one
+        if (speed === null || speed === undefined || speed === '') {
             return null;
         }
         if (typeof speed === 'number') {
