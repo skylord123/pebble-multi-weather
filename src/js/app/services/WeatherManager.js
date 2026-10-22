@@ -236,12 +236,12 @@ var WeatherManager = {
             return 'USA Only';
         }
 
-        if (status === 'loading' || !data) {
-            return 'Fetching...';
-        }
-
         if (status === 'error') {
             return 'Error loading data';
+        }
+
+        if (status === 'loading' || !data) {
+            return 'Fetching...';
         }
 
         if (service) {
