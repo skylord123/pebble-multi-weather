@@ -895,6 +895,9 @@
 
 	// Store for API keys
 	var apiKeys = {};
+	// Keys the page loaded or the user edited. Only these are saved: a key the
+	// page never saw is the watch's to keep, not an empty string to send back.
+	var apiKeysKnown = {};
 
 	var DEFAULT_CUSTOM_TEMPLATE = '{temp} H:{temp_high} L:{temp_low} {wind_direction} {windspeed}';
 	var DEFAULT_FORECAST_SUBTITLE_TEMPLATE = '{temp} {temp_high} / {temp_low} {precip}';
@@ -1291,6 +1294,7 @@
 	// provider on, since that is what the watch did with it.
 	function useApiKey(provider, apiKey, switchOn) {
 		apiKeys[provider.apiKeySettingName] = apiKey;
+		apiKeysKnown[provider.apiKeySettingName] = true;
 		var checkbox = document.querySelector('input[data-provider="' + provider.id + '"]');
 		if (checkbox) {
 			setCheckboxForKey(checkbox, provider, switchOn || checkbox.checked);
@@ -1398,6 +1402,7 @@
 		PROVIDERS.forEach(function(provider) {
 			if (provider.requiresApiKey && provider.apiKeySettingName) {
 				apiKeys[provider.apiKeySettingName] = options[provider.apiKeySettingName] || '';
+				apiKeysKnown[provider.apiKeySettingName] = options.hasOwnProperty(provider.apiKeySettingName);
 			}
 		});
 
@@ -1454,7 +1459,7 @@
 
 		// Add API keys to payload
 		for (var key in apiKeys) {
-			if (apiKeys.hasOwnProperty(key)) {
+			if (apiKeys.hasOwnProperty(key) && apiKeysKnown[key]) {
 				payload[key] = apiKeys[key];
 			}
 		}
@@ -1505,14 +1510,21 @@
 	// ===== Loading ==========================================================
 
 	function loadFromHash() {
-		var options = {};
+		var options = null;
 		var hash = window.location.hash;
 		if (hash && hash.length > 1) {
 			try {
-				options = JSON.parse(decodeURIComponent(hash.substring(1))) || {};
+				options = JSON.parse(decodeURIComponent(hash.substring(1)));
 			} catch (e) {
-				options = {};
+				options = null;
 			}
+		}
+		if (!options || typeof options !== 'object') {
+			// Saving now would put these defaults over whatever the watch has
+			display_alert('warning', '<strong>Your current settings could not be loaded,</strong> ' +
+				'so this page shows the defaults. Saving replaces your settings with what is shown here, ' +
+				'apart from API keys you do not change.');
+			options = {};
 		}
 		populateForm(options);
 	}
